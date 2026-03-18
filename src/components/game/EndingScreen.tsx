@@ -171,18 +171,16 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
   const endingNumber = types.indexOf(endingId) + 1;
   
   return (
-    <div 
-      className="min-h-screen flex flex-col items-center justify-start py-12 px-4 relative"
-      style={{
-        background: ending.backgroundGradient,
-        overflowY: 'scroll',
-      }}
-      onClick={handleSkip}
-    >
+    <div className="relative" style={{ minHeight: '100vh' }} onClick={handleSkip}>
+
+      {/* Fixed background layers — don't affect scroll */}
+      <div className="fixed inset-0 pointer-events-none" style={{ background: ending.backgroundGradient, zIndex: 0 }} />
+
       {/* Vignette overlay */}
       <div 
         className="fixed inset-0 pointer-events-none"
         style={{
+          zIndex: 1,
           background: endingId === 'good' 
             ? 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.3) 100%)'
             : endingId === 'bad'
@@ -192,7 +190,7 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
       />
       
       {/* Particles */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
         {[...Array(endingId === 'good' ? 20 : endingId === 'bad' ? 30 : 15)].map((_, i) => (
           <motion.div
             key={i}
@@ -224,8 +222,11 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
         ))}
       </div>
       
-      {/* Main content */}
-      <div className="relative z-10 max-w-[700px] w-full text-center">
+      {/* Scrollable content — sits above fixed layers */}
+      <div
+        className="relative flex flex-col items-center justify-start py-12 px-4"
+        style={{ zIndex: 2 }}
+      >
         
         {/* Decorative symbol */}
         <AnimatePresence>

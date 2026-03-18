@@ -186,18 +186,18 @@ export function GameBackground({ narratorId, accentColor }: GameBackgroundProps)
             left: `calc(${blob.x} - ${blob.size / 2}px)`,
             top: `calc(${blob.y} - ${blob.size / 2}px)`,
             background: `radial-gradient(circle, ${blob.color} 0%, transparent 70%)`,
-            filter: 'blur(80px)',
+            filter: 'blur(50px)',
           }}
         />
       ))}
 
-      {/* SVG pattern — slightly blurred */}
-      <div className="absolute inset-0" style={{ filter: 'blur(0.8px)', opacity: 0.9 }}>
+      {/* SVG pattern */}
+      <div className="absolute inset-0">
         <PatternSVG id={narratorId} accentColor={accentColor} />
       </div>
 
-      {/* Dark overlay — makes content readable */}
-      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.62)' }} />
+      {/* Dark overlay — makes content readable without hiding background */}
+      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.45)' }} />
 
       {/* Vignette */}
       <div

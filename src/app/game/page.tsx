@@ -420,7 +420,7 @@ export default function GamePage() {
               className="font-serif text-xl font-semibold"
               style={{ color: preset.accentColor }}
             >
-              Хроники
+              GenNarrative
             </span>
           </div>
           

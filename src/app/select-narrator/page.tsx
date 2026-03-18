@@ -128,20 +128,28 @@ const AmbientBackground = memo(function AmbientBackground({ selectedId }: { sele
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {SCAN_LINES.map((line, i) => (
             <motion.div key={i} className="absolute left-0 right-0"
-              style={{ height:'1px', background:'rgba(75,163,212,0.06)', top: line.top }}
+              style={{ height:'1px', background:'rgba(0,212,255,0.07)', top: line.top }}
               animate={{ y: ['0vh', '100vh'] }}
               transition={{ duration:12, delay: line.delay, repeat: Infinity, ease:'linear' }}
+            />
+          ))}
+          {/* Hex grid dots */}
+          {[15,35,55,75,90].map((x, i) => (
+            <motion.div key={i} className="absolute rounded-full"
+              style={{ width:3, height:3, background:'rgba(0,212,255,0.18)', left:`${x}%`, top:`${20+i*15}%` }}
+              animate={{ opacity:[0.1,0.4,0.1] }}
+              transition={{ duration:3+i, delay:i*0.5, repeat:Infinity, ease:'easeInOut' }}
             />
           ))}
         </div>
       )}
 
-      {/* Detective: rain */}
+      {/* Detective: rain streaks */}
       {selectedId === 'detective' && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {RAIN_STREAKS.map(s => (
             <motion.div key={s.id} className="absolute"
-              style={{ width:'1px', height: s.height, background:'rgba(201,168,76,0.04)', left: s.left, top:'-10%', transform:'rotate(15deg)' }}
+              style={{ width:'1px', height: s.height, background:'rgba(201,168,76,0.06)', left: s.left, top:'-10%', transform:'rotate(15deg)' }}
               animate={{ y: ['0vh', '110vh'] }}
               transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, ease:'linear' }}
             />
@@ -149,14 +157,60 @@ const AmbientBackground = memo(function AmbientBackground({ selectedId }: { sele
         </div>
       )}
 
-      {/* Horror: vignette */}
+      {/* Horror: pulsing vignette + creeping lines */}
       {selectedId === 'horror' && (
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div className="absolute inset-0"
             style={{ background:'radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.4) 100%)' }}
             animate={{ opacity: [0.5, 0.8, 0.5] }}
             transition={{ duration:6, repeat: Infinity, ease:'easeInOut' }}
           />
+          {[0,1,2].map(i => (
+            <motion.div key={i} className="absolute left-0 right-0"
+              style={{ height:'1px', background:'rgba(139,46,59,0.12)', top:`${30+i*25}%` }}
+              animate={{ opacity:[0,0.3,0], scaleX:[0.8,1,0.8] }}
+              transition={{ duration:4+i*2, delay:i*1.5, repeat:Infinity, ease:'easeInOut' }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Neutral: slow drifting lines */}
+      {selectedId === 'neutral' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[20,40,60,80].map((y, i) => (
+            <motion.div key={i} className="absolute left-0 right-0"
+              style={{ height:'1px', background:'rgba(168,176,188,0.06)', top:`${y}%` }}
+              animate={{ opacity:[0.3,0.7,0.3], x:['-2%','2%','-2%'] }}
+              transition={{ duration:8+i*2, delay:i, repeat:Infinity, ease:'easeInOut' }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Comedian: bouncing stars */}
+      {selectedId === 'comedian' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[{x:15,y:20},{x:80,y:15},{x:45,y:70},{x:70,y:55}].map((pos, i) => (
+            <motion.div key={i} className="absolute select-none"
+              style={{ left:`${pos.x}%`, top:`${pos.y}%`, fontSize:16, opacity:0.12, color:'#E8A838' }}
+              animate={{ y:[0,-12,0], rotate:[0,15,-15,0] }}
+              transition={{ duration:3+i, delay:i*0.8, repeat:Infinity, ease:'easeInOut' }}
+            >★</motion.div>
+          ))}
+        </div>
+      )}
+
+      {/* Fighter: diagonal flash lines */}
+      {selectedId === 'fighter' && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[0,1,2].map(i => (
+            <motion.div key={i} className="absolute"
+              style={{ width:'150%', height:'1px', background:'rgba(212,91,62,0.10)', left:'-25%', top:`${25+i*25}%`, transform:'rotate(-15deg)' }}
+              animate={{ opacity:[0,0.5,0] }}
+              transition={{ duration:2, delay:i*0.7, repeat:Infinity, ease:'easeInOut' }}
+            />
+          ))}
         </div>
       )}
 
@@ -271,7 +325,7 @@ export default function SelectNarratorPage() {
       <div className="relative z-10 flex flex-col flex-1 px-4 md:px-8 pb-8 overflow-y-auto">
 
         {/* Heading */}
-        <div className="flex flex-col items-center mt-8 mb-7">
+        <div className="flex flex-col items-center mt-16 mb-7">
           <motion.h1
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.9 }}

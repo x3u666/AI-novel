@@ -94,7 +94,7 @@ export function Toolbar({
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <span className="font-playfair text-xl md:text-2xl font-bold text-white/90">
-              Хроники
+              GenNarrative
             </span>
           </button>
         )}
