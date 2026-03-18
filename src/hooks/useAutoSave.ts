@@ -2,51 +2,37 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useGameStore } from '@/stores/gameStore';
-import { saveSlot } from '@/services/saveService';
+import { saveGame } from '@/services/saveService';
 import { useToast } from '@/hooks/use-toast';
 
 interface UseAutoSaveOptions {
-  /** Whether auto-save is enabled */
   enabled?: boolean;
-  /** Auto-save interval in milliseconds (default: 5 minutes) */
   interval?: number;
-  /** Show toast notifications on save */
   showToasts?: boolean;
 }
 
-/**
- * Custom hook for auto-save functionality
- * 
- * Features:
- * - Auto-saves every X minutes if there are changes
- * - Auto-saves after each decision
- * - Auto-saves on chapter change
- * - Shows toast notification on save
- */
 export function useAutoSave({
   enabled = true,
-  interval = 5 * 60 * 1000, // 5 minutes default
+  interval = 3 * 60 * 1000, // 3 minutes
   showToasts = true,
 }: UseAutoSaveOptions = {}) {
   const { toast } = useToast();
-  const lastSaveTimeRef = useRef<number>(0);
   const lastDecisionCountRef = useRef<number>(0);
   const lastChapterRef = useRef<number>(1);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get current state values
   const decisions = useGameStore((state) => state.decisions);
   const currentChapter = useGameStore((state) => state.currentChapter);
   const isGameStarted = useGameStore((state) => state.isGameStarted);
+  const isFinished = useGameStore((state) => state.isFinished);
 
-  // Perform save
   const performSave = useCallback((reason: string) => {
-    if (!isGameStarted) return;
+    if (!isGameStarted || isFinished) return;
 
     try {
-      saveSlot(0, useGameStore.getState()); // Auto-save slot (index 0)
-      lastSaveTimeRef.current = Date.now();
-      
+      const state = useGameStore.getState();
+      saveGame(state.selectedSlotIndex, state);
+
       if (showToasts) {
         toast({
           title: 'Автосохранение',
@@ -54,11 +40,8 @@ export function useAutoSave({
           duration: 2000,
         });
       }
-      
-      console.log(`[AutoSave] Saved: ${reason}`);
     } catch (error) {
-      console.error('[AutoSave] Failed to save:', error);
-      
+      console.error('[AutoSave] Failed:', error);
       if (showToasts) {
         toast({
           title: 'Ошибка сохранения',
@@ -68,11 +51,11 @@ export function useAutoSave({
         });
       }
     }
-  }, [isGameStarted, showToasts, toast]);
+  }, [isGameStarted, isFinished, showToasts, toast]);
 
-  // Set up interval auto-save
+  // Interval save
   useEffect(() => {
-    if (!enabled || !isGameStarted) {
+    if (!enabled || !isGameStarted || isFinished) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -80,19 +63,10 @@ export function useAutoSave({
       return;
     }
 
-    // Clear any existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
-    // Set up new interval
     intervalRef.current = setInterval(() => {
-      const timeSinceLastSave = Date.now() - lastSaveTimeRef.current;
-      
-      // Only save if enough time has passed
-      if (timeSinceLastSave >= interval) {
-        performSave('по таймеру');
-      }
+      performSave('по таймеру');
     }, interval);
 
     return () => {
@@ -101,58 +75,56 @@ export function useAutoSave({
         intervalRef.current = null;
       }
     };
-  }, [enabled, isGameStarted, interval, performSave]);
+  }, [enabled, isGameStarted, isFinished, interval, performSave]);
 
-  // Auto-save on decision change
+  // Save after each decision
   useEffect(() => {
-    if (!enabled || !isGameStarted) return;
+    if (!enabled || !isGameStarted || isFinished) return;
 
-    const currentDecisionCount = decisions.length;
-    
-    // Check if a new decision was made
-    if (currentDecisionCount > lastDecisionCountRef.current && lastDecisionCountRef.current > 0) {
-      // Small delay to let the state update
-      const timeoutId = setTimeout(() => {
-        performSave('после решения');
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
+    const currentCount = decisions.length;
+    if (currentCount > lastDecisionCountRef.current && lastDecisionCountRef.current > 0) {
+      const id = setTimeout(() => performSave('после решения'), 500);
+      lastDecisionCountRef.current = currentCount;
+      return () => clearTimeout(id);
     }
-    
-    lastDecisionCountRef.current = currentDecisionCount;
-  }, [decisions.length, enabled, isGameStarted, performSave]);
+    lastDecisionCountRef.current = currentCount;
+  }, [decisions.length, enabled, isGameStarted, isFinished, performSave]);
 
-  // Auto-save on chapter change
+  // Save on chapter change
   useEffect(() => {
-    if (!enabled || !isGameStarted) return;
+    if (!enabled || !isGameStarted || isFinished) return;
 
-    // Check if chapter changed
     if (currentChapter > lastChapterRef.current && lastChapterRef.current > 0) {
-      // Small delay to let the state update
-      const timeoutId = setTimeout(() => {
-        performSave('новая глава');
-      }, 1000);
-      
+      const id = setTimeout(() => performSave('новая глава'), 1000);
       lastChapterRef.current = currentChapter;
-      return () => clearTimeout(timeoutId);
+      return () => clearTimeout(id);
     }
-    
     lastChapterRef.current = currentChapter;
-  }, [currentChapter, enabled, isGameStarted, performSave]);
+  }, [currentChapter, enabled, isGameStarted, isFinished, performSave]);
 
-  // Initialize refs
+  // Initialize refs on mount
   useEffect(() => {
     lastDecisionCountRef.current = decisions.length;
     lastChapterRef.current = currentChapter;
-  }, []); // Only on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Manual save function
-  const saveNow = useCallback((reason: string = 'ручное сохранение') => {
+  // Save on unmount (exit from game page)
+  useEffect(() => {
+    return () => {
+      const state = useGameStore.getState();
+      if (state.isGameStarted && !state.isFinished) {
+        try {
+          saveGame(state.selectedSlotIndex, state);
+        } catch (e) {
+          console.error('[AutoSave] Unmount save failed:', e);
+        }
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveNow = useCallback((reason = 'ручное сохранение') => {
     performSave(reason);
   }, [performSave]);
 
-  return {
-    saveNow,
-    lastSaveTime: lastSaveTimeRef.current,
-  };
+  return { saveNow };
 }

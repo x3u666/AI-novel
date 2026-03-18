@@ -33,7 +33,7 @@ export default function SelectNarratorPage() {
   // Check if mounted on client
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const { startNewGame } = useGameStore();
+  const { startNewGame, selectedSlotIndex } = useGameStore();
 
   // Get selected preset
   const selectedPreset = presets.find((p) => p.id === selectedId) || null;
@@ -46,8 +46,7 @@ export default function SelectNarratorPage() {
   // Handle continue button
   const handleContinue = () => {
     if (selectedId) {
-      // Start new game with selected narrator (resets state and sets isGameStarted: true)
-      startNewGame(selectedId);
+      startNewGame(selectedId, selectedSlotIndex ?? 1);
       router.push('/game');
     }
   };

@@ -66,7 +66,7 @@ export interface SaveSlot {
   thumbnail?: string;
   playTime: number;
   decisions: Decision[];
-  narratorId: PresetId;
+  narratorId: PresetId | null;
   gameState?: Partial<GameState>; // Store essential game state for loading
 }
 
@@ -102,7 +102,8 @@ export interface GameState {
   // Save/Load
   saveSlots: SaveSlot[];
   currentSlotId: string | null;
-  
+  selectedSlotIndex: number | null; // slot 1-3 chosen at new game start
+
   // Session data
   sessionStartTime: number | null;
   totalPlayTime: number;
@@ -134,7 +135,8 @@ export const DEFAULT_GAME_STATE: GameState = {
   
   saveSlots: [],
   currentSlotId: null,
-  
+  selectedSlotIndex: null,
+
   sessionStartTime: null,
   totalPlayTime: 0,
   lastSaveTime: null,

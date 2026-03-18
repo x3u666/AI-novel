@@ -6,6 +6,7 @@ import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from './TypingIndicator';
 import { ChoiceButtons } from './ChoiceButtons';
 import { UserInput } from './UserInput';
+import { FinishedGameBanner } from './FinishedGameBanner';
 import { AutoPlayButton } from './AutoPlayButton';
 import { MessageSquare } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
@@ -19,6 +20,7 @@ interface ChatPanelProps {
   onSendMessage: (text: string) => void;
   onChoose: (choice: Choice) => void;
   isDisabled?: boolean;
+  isFinished?: boolean;
   useTypewriter?: boolean;
   onTypingComplete?: () => void;
 }
@@ -31,6 +33,7 @@ export function ChatPanel({
   onSendMessage,
   onChoose,
   isDisabled = false,
+  isFinished = false,
   useTypewriter = true,
   onTypingComplete,
 }: ChatPanelProps) {
@@ -145,11 +148,8 @@ export function ChatPanel({
                   style={{ color: preset.accentColor }}
                 />
               </div>
-              <p className="text-white/50 text-sm max-w-sm mb-4">
-                {preset.initialMessage}
-              </p>
               <p className="text-white/30 text-xs">
-                Введите первое сообщение, чтобы начать историю
+                История начнётся совсем скоро...
               </p>
             </div>
           )}
@@ -158,7 +158,7 @@ export function ChatPanel({
 
       {/* Choice buttons (if available) */}
       {showChoices && (
-        <div className="flex-shrink-0 px-6 py-4 border-t border-white/5 max-h-64 overflow-y-auto">
+        <div className="flex-shrink-0 px-6 py-4 border-t border-white/5 h-[330px] overflow-y-auto">
           <ChoiceButtons
             choices={choices}
             onChoose={onChoose}
@@ -168,17 +168,21 @@ export function ChatPanel({
         </div>
       )}
 
-      {/* User Input */}
+      {/* User Input or Finished Banner */}
       {!showChoices && (
-        <div className="flex-shrink-0">
-          <UserInput
-            onSend={onSendMessage}
-            disabled={isDisabled || isTyping || isTypewriterActive}
-            minLength={10}
-            maxLength={500}
-            placeholder="Опишите ваше действие или ответ..."
-          />
-        </div>
+        isFinished
+          ? <FinishedGameBanner accentColor={preset.accentColor} />
+          : (
+            <div className="flex-shrink-0">
+              <UserInput
+                onSend={onSendMessage}
+                disabled={isDisabled || isTyping || isTypewriterActive}
+                minLength={10}
+                maxLength={500}
+                placeholder="Опишите ваше действие или ответ..."
+              />
+            </div>
+          )
       )}
     </div>
   );

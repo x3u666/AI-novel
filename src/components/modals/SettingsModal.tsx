@@ -79,6 +79,20 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 </button>
               ))}
             </div>
+            {/* Live preview */}
+            <div className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 min-h-[48px] flex items-center">
+              <p
+                className="text-white/70 leading-snug line-clamp-2 transition-all duration-200"
+                style={{
+                  fontSize: textSize === 'small' ? '12px'
+                    : textSize === 'medium' ? '14px'
+                    : textSize === 'large' ? '16px'
+                    : '19px',
+                }}
+              >
+                Рассказчик произнёс слова, и мир вокруг изменился навсегда.
+              </p>
+            </div>
           </div>
 
           {/* Typing Speed */}

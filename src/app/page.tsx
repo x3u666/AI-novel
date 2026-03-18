@@ -8,16 +8,14 @@ import { MenuButton } from '@/components/menu/MenuButton';
 import { SettingsModal } from '@/components/modals/SettingsModal';
 import { AboutModal } from '@/components/modals/AboutModal';
 import { LoadGameModal } from '@/components/modals/LoadGameModal';
+import { NewGameSlotModal } from '@/components/modals/NewGameSlotModal';
 import { useGameStore } from '@/stores/gameStore';
-import { loadSlot } from '@/services/saveService';
+import { hasAutoSave } from '@/services/saveService';
 
-// Subscribe function for useSyncExternalStore
-const subscribe = (callback: () => void) => {
-  window.addEventListener('storage', callback);
-  return () => window.removeEventListener('storage', callback);
+const subscribe = (cb: () => void) => {
+  window.addEventListener('storage', cb);
+  return () => window.removeEventListener('storage', cb);
 };
-
-// Get snapshot for SSR vs client
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
@@ -26,88 +24,57 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [loadOpen, setLoadOpen] = useState(false);
+  const [newGameSlotOpen, setNewGameSlotOpen] = useState(false);
 
-  // Check if mounted on client
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  const { loadGame } = useGameStore();
+  const { loadGame, setSelectedSlot } = useGameStore();
 
-  // Check if auto-save exists
-  const autoSave = typeof window !== 'undefined' ? loadSlot(0) : null;
-  const hasSave = !!autoSave;
+  const canContinue = typeof window !== 'undefined' && hasAutoSave();
 
+  // "Новая игра" — first pick a slot, then go to narrator selection
   const handleNewGame = () => {
-    // Navigate to narrator selection
+    setNewGameSlotOpen(true);
+  };
+
+  const handleSlotSelected = (slotIndex: number) => {
+    setSelectedSlot(slotIndex);
     router.push('/select-narrator');
   };
 
+  // "Продолжить" — load auto-save (slot 0) directly
   const handleContinue = () => {
-    if (hasSave) {
-      // Load from auto-save slot (index 0)
+    if (canContinue) {
       loadGame(0);
       router.push('/game');
     }
   };
 
-  // Animation variants
   const titleVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.25, 0.4, 0.25, 1],
-      },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.25, 0.4, 0.25, 1] } },
   };
-
   const subtitleVariants = {
     hidden: { opacity: 0, y: 15 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: [0.25, 0.4, 0.25, 1],
-      },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] } },
   };
-
   const buttonContainerVariants = {
     hidden: {},
-    visible: {
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      },
-    },
+    visible: { transition: { staggerChildren: 0.1, delayChildren: 0.3 } },
   };
-
   const buttonVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: [0.25, 0.4, 0.25, 1],
-      },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] } },
   };
 
-  if (!mounted) {
-    return null; // Prevent hydration mismatch
-  }
+  if (!mounted) return null;
 
   return (
     <main className="relative min-h-screen overflow-hidden">
-      {/* Animated Background */}
       <AnimatedBackground />
 
-      {/* Content Container */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
-        {/* Title Section */}
+        {/* Title */}
         <div className="text-center mb-16">
           <motion.h1
             variants={titleVariants}
@@ -125,7 +92,6 @@ export default function Home() {
           >
             Хроники
           </motion.h1>
-
           <motion.p
             variants={subtitleVariants}
             initial="hidden"
@@ -137,7 +103,7 @@ export default function Home() {
           </motion.p>
         </div>
 
-        {/* Menu Buttons */}
+        {/* Menu buttons */}
         <motion.div
           variants={buttonContainerVariants}
           initial="hidden"
@@ -146,45 +112,33 @@ export default function Home() {
           className="flex flex-col items-center gap-4"
         >
           <motion.div variants={buttonVariants}>
-            <MenuButton
-              label="Новая игра"
-              onClick={handleNewGame}
-            />
+            <MenuButton label="Новая игра" onClick={handleNewGame} />
           </motion.div>
 
           <motion.div variants={buttonVariants}>
             <MenuButton
               label="Продолжить"
               onClick={handleContinue}
-              disabled={!hasSave}
-              tooltip={!hasSave ? 'Нет сохранений' : undefined}
+              disabled={!canContinue}
+              tooltip={!canContinue ? 'Нет сохранений' : undefined}
             />
           </motion.div>
 
           <motion.div variants={buttonVariants}>
-            <MenuButton
-              label="Загрузить игру"
-              onClick={() => setLoadOpen(true)}
-            />
+            <MenuButton label="Загрузить игру" onClick={() => setLoadOpen(true)} />
           </motion.div>
 
           <motion.div variants={buttonVariants}>
-            <MenuButton
-              label="Настройки"
-              onClick={() => setSettingsOpen(true)}
-            />
+            <MenuButton label="Настройки" onClick={() => setSettingsOpen(true)} />
           </motion.div>
 
           <motion.div variants={buttonVariants}>
-            <MenuButton
-              label="Об игре"
-              onClick={() => setAboutOpen(true)}
-            />
+            <MenuButton label="Об игре" onClick={() => setAboutOpen(true)} />
           </motion.div>
         </motion.div>
       </div>
 
-      {/* Version Number */}
+      {/* Version */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -196,6 +150,13 @@ export default function Home() {
 
       {/* Modals */}
       <AnimatePresence>
+        {newGameSlotOpen && (
+          <NewGameSlotModal
+            open={newGameSlotOpen}
+            onOpenChange={setNewGameSlotOpen}
+            onSlotSelected={handleSlotSelected}
+          />
+        )}
         {settingsOpen && (
           <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
         )}

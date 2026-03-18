@@ -17,7 +17,7 @@ import { loadSlot } from '@/services/saveService';
 
 interface GameActions {
   // Game lifecycle
-  startNewGame: (narratorId: PresetId) => void;
+  startNewGame: (narratorId: PresetId, slotIndex: number) => void;
   loadGame: (slotIndex: number) => void;
   saveGame: (slotName: string) => void;
   deleteSaveSlot: (slotId: string) => void;
@@ -25,7 +25,10 @@ interface GameActions {
   resumeGame: () => void;
   endGame: () => void;
   resetGame: () => void;
-  
+
+  // Slot selection
+  setSelectedSlot: (index: number) => void;
+
   // Ending
   setEnding: (endingId: EndingType) => void;
   
@@ -71,12 +74,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   ...DEFAULT_GAME_STATE,
   
   // Game lifecycle actions
-  startNewGame: (narratorId) => {
+  startNewGame: (narratorId, slotIndex) => {
     set({
       ...DEFAULT_GAME_STATE,
       isGameStarted: true,
       isGamePaused: false,
       selectedNarrator: narratorId,
+      selectedSlotIndex: slotIndex,
       sessionStartTime: Date.now(),
       narrativeBlocks: [],
       chatHistory: [],
@@ -84,14 +88,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentChapter: 1,
     });
   },
+
+  setSelectedSlot: (index) => {
+    set({ selectedSlotIndex: index });
+  },
   
   loadGame: (slotIndex) => {
     const slot = loadSlot(slotIndex);
     if (!slot || !slot.gameState) return;
-    
+
     set({
       isGameStarted: true,
       isGamePaused: false,
+      isFinished: slot.gameState.isFinished || false,
+      endingId: slot.gameState.endingId || null,
       currentChapter: slot.gameState.currentChapter || 1,
       decisions: slot.gameState.decisions || [],
       narrativeBlocks: slot.gameState.narrativeBlocks || [],
@@ -101,6 +111,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       visitedLocations: slot.gameState.visitedLocations || [],
       selectedNarrator: slot.gameState.selectedNarrator || 'knight',
       currentNarrative: slot.gameState.currentNarrative || '',
+      selectedSlotIndex: slot.gameState.selectedSlotIndex ?? (slotIndex > 0 ? slotIndex : null),
       sessionStartTime: Date.now(),
       totalPlayTime: slot.playTime,
     });
@@ -345,3 +356,4 @@ export const selectSelectedNarrator = (state: GameStore) => state.selectedNarrat
 export const selectSaveSlots = (state: GameStore) => state.saveSlots;
 export const selectIsFinished = (state: GameStore) => state.isFinished;
 export const selectEndingId = (state: GameStore) => state.endingId;
+export const selectSelectedSlotIndex = (state: GameStore) => state.selectedSlotIndex;

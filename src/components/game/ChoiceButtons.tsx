@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Choice } from '@/types';
 import { ChevronRight } from 'lucide-react';
@@ -92,10 +92,14 @@ export function ChoiceButtons({
 }: ChoiceButtonsProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const isProcessingRef = useRef(false);
 
   const handleClick = (choice: Choice) => {
     if (disabled || choice.disabled) return;
+    // Prevent any second click while the first is being processed
+    if (isProcessingRef.current || selectedId !== null) return;
 
+    isProcessingRef.current = true;
     setSelectedId(choice.id);
     
     // Delay to show selection animation
@@ -120,13 +124,14 @@ export function ChoiceButtons({
         <span className="text-sm text-white/60">Выберите действие:</span>
       </div>
 
-      <div className="space-y-2 max-h-64 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         <AnimatePresence>
           {choices.map((choice, index) => {
             const isSelected = selectedId === choice.id;
             const isOther = selectedId !== null && !isSelected;
             const isHovered = hoveredId === choice.id;
             const emoji = getChoiceEmoji(choice.text);
+            const isDisabled = disabled || choice.disabled || (selectedId !== null && !isSelected);
 
             return (
               <motion.button
@@ -143,13 +148,13 @@ export function ChoiceButtons({
                   duration: 0.2,
                 }}
                 onClick={() => handleClick(choice)}
-                onMouseEnter={() => setHoveredId(choice.id)}
+                onMouseEnter={() => !isDisabled && setHoveredId(choice.id)}
                 onMouseLeave={() => setHoveredId(null)}
-                disabled={disabled || choice.disabled}
+                disabled={isDisabled}
                 className={`
                   w-full text-left px-4 py-3 rounded-xl
                   transition-all duration-200
-                  ${disabled || choice.disabled
+                  ${isDisabled
                     ? 'opacity-40 cursor-not-allowed'
                     : 'cursor-pointer'
                   }
@@ -184,12 +189,17 @@ export function ChoiceButtons({
                   />
                 </div>
 
-                {/* Consequence hint */}
-                {choice.consequence && (isHovered || isSelected) && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-2 pt-2 border-t border-white/10"
+                {/* Consequence hint — fixed height to prevent layout jumps */}
+                {choice.consequence && (
+                  <div
+                    className="mt-2 pt-2 border-t border-white/10 overflow-hidden transition-all duration-200"
+                    style={{
+                      maxHeight: isHovered || isSelected ? '40px' : '0px',
+                      opacity: isHovered || isSelected ? 1 : 0,
+                      borderTopWidth: isHovered || isSelected ? '1px' : '0px',
+                      marginTop: isHovered || isSelected ? '8px' : '0px',
+                      paddingTop: isHovered || isSelected ? '8px' : '0px',
+                    }}
                   >
                     <p
                       className="text-xs italic"
@@ -197,7 +207,7 @@ export function ChoiceButtons({
                     >
                       {choice.consequence}
                     </p>
-                  </motion.div>
+                  </div>
                 )}
               </motion.button>
             );

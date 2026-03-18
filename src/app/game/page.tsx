@@ -8,7 +8,6 @@ import {
   Users,
   Map,
   Settings,
-  Save,
   Home,
   Loader2,
 } from 'lucide-react';
@@ -18,11 +17,11 @@ import { DiaryPanel } from '@/components/game/DiaryPanel';
 import { CharactersPanel } from '@/components/game/CharactersPanel';
 import { DecisionMap } from '@/components/game/DecisionMap';
 import { SettingsModal } from '@/components/modals/SettingsModal';
-import { SaveGameModal } from '@/components/modals/SaveGameModal';
 import { useGameStore } from '@/stores/gameStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useAutoSave } from '@/hooks/useAutoSave';
+import { saveSlot } from '@/services/saveService';
 import { getPresetById, presets } from '@/data/presets';
 import {
   getInitialNarrative,
@@ -106,6 +105,8 @@ export default function GamePage() {
     availableChoices,
     decisions,
     currentChapter,
+    isFinished,
+    selectedSlotIndex,
     startNewGame,
     addNarrativeBlock,
     addChatMessage,
@@ -126,7 +127,6 @@ export default function GamePage() {
   const [showCharacters, setShowCharacters] = useState(false);
   const [showDecisionMap, setShowDecisionMap] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [showSaveModal, setShowSaveModal] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Ref to track previous chapter for auto-save
@@ -153,10 +153,13 @@ export default function GamePage() {
 
   // Initialize game on first load
   useEffect(() => {
-    if (isGameStarted && !isInitialized && selectedNarrator) {
+    if (isGameStarted && !isInitialized && selectedNarrator && !isFinished && chatHistory.length === 0) {
       initializeGame();
+    } else if (isGameStarted && !isInitialized && chatHistory.length > 0) {
+      // Loaded from save — skip init, mark as initialized
+      setIsInitialized(true);
     }
-  }, [isGameStarted, isInitialized, selectedNarrator]);
+  }, [isGameStarted, isInitialized, selectedNarrator, isFinished, chatHistory.length]);
 
   // Initialize game with first narrative
   const initializeGame = async () => {
@@ -254,8 +257,13 @@ export default function GamePage() {
         const endingInfo = getEndingInfo(response.nextSceneId);
         if (endingInfo) {
           setEnding(endingInfo.type);
-          // Navigate to ending page after a short delay
+          // Save with isFinished=true to both auto-slot and user slot, then navigate
           setTimeout(() => {
+            const s = useGameStore.getState();
+            try { saveSlot(0, s); } catch (e) { console.error(e); }
+            if (s.selectedSlotIndex) {
+              try { saveSlot(s.selectedSlotIndex, s); } catch (e) { console.error(e); }
+            }
             router.push('/ending');
           }, 2000);
         }
@@ -326,8 +334,13 @@ export default function GamePage() {
         const endingInfo = getEndingInfo(response.nextSceneId);
         if (endingInfo) {
           setEnding(endingInfo.type);
-          // Navigate to ending page after a short delay
+          // Save with isFinished=true to both auto-slot and user slot, then navigate
           setTimeout(() => {
+            const s = useGameStore.getState();
+            try { saveSlot(0, s); } catch (e) { console.error(e); }
+            if (s.selectedSlotIndex) {
+              try { saveSlot(s.selectedSlotIndex, s); } catch (e) { console.error(e); }
+            }
             router.push('/ending');
           }, 2000);
         }
@@ -350,14 +363,25 @@ export default function GamePage() {
     setShowExitDialog(true);
   };
 
-  // Confirm exit to main menu
+  // Confirm exit — save then go to menu
   const confirmExit = () => {
+    const state = useGameStore.getState();
+    if (state.isGameStarted && !state.isFinished) {
+      try { saveSlot(0, state); } catch (e) { console.error(e); }
+      if (state.selectedSlotIndex) {
+        try { saveSlot(state.selectedSlotIndex, state); } catch (e) { console.error(e); }
+      }
+    }
     router.push('/');
   };
 
-  // Handle save - opens save modal
+  // Handle save — no longer used (auto-save on exit), kept for compatibility
   const handleSave = () => {
-    setShowSaveModal(true);
+    const state = useGameStore.getState();
+    try { saveSlot(0, state); } catch (e) { console.error(e); }
+    if (state.selectedSlotIndex) {
+      try { saveSlot(state.selectedSlotIndex, state); } catch (e) { console.error(e); }
+    }
   };
 
   // Get text size class
@@ -431,11 +455,6 @@ export default function GamePage() {
             onClick={() => setShowSettings(true)}
             active={showSettings}
           />
-          <ToolbarButton
-            icon={Save}
-            label="Сохранить"
-            onClick={handleSave}
-          />
           <div className="w-px h-6 bg-white/10 mx-1" />
           <ToolbarButton
             icon={Home}
@@ -481,11 +500,12 @@ export default function GamePage() {
           <ChatPanel
             messages={chatHistory}
             preset={preset}
-            choices={availableChoices}
+            choices={isFinished ? [] : availableChoices}
             isTyping={isTyping}
             onSendMessage={handleSendMessage}
             onChoose={handleChoose}
-            isDisabled={isLoading}
+            isDisabled={isLoading || isFinished}
+            isFinished={isFinished}
             useTypewriter={true}
             onTypingComplete={handleTypingComplete}
           />
@@ -516,12 +536,6 @@ export default function GamePage() {
         onClose={() => setShowDecisionMap(false)}
       />
 
-      {/* Save Modal */}
-      <SaveGameModal
-        open={showSaveModal}
-        onOpenChange={setShowSaveModal}
-      />
-
       {/* Exit confirmation dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <DialogContent className="bg-[#1a1a24] border-white/10 text-white">
@@ -529,7 +543,7 @@ export default function GamePage() {
             <DialogTitle className="text-white">Выйти в главное меню?</DialogTitle>
           </DialogHeader>
           <p className="text-white/60 text-sm">
-            Несохранённый прогресс будет потерян. Вы уверены, что хотите выйти?
+            Прогресс будет сохранён автоматически. Вы уверены, что хотите выйти?
           </p>
           <DialogFooter className="gap-2">
             <Button

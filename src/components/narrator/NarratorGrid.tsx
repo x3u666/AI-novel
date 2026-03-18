@@ -34,7 +34,7 @@ export function NarratorGrid({ presets, selectedId, onSelect }: NarratorGridProp
     function update() {
       setCardStep(getCardStep());
       const w = window.innerWidth;
-      setVisibleCount(w >= 1280 ? 5 : w >= 1024 ? 4 : w >= 768 ? 3 : 2);
+      setVisibleCount(6);
     }
     update();
     const onResize = debounce(update, 150);
@@ -88,6 +88,9 @@ export function NarratorGrid({ presets, selectedId, onSelect }: NarratorGridProp
 
   const translateX = -offset * cardStep;
 
+  // Exactly 6 full cards, no clipping, no fade
+  const containerWidth = 6 * cardStep - 16;
+
   return (
     <div className="flex flex-col items-center w-full max-w-[1100px] mx-auto select-none">
       <div className="relative flex items-center w-full">
@@ -112,14 +115,19 @@ export function NarratorGrid({ presets, selectedId, onSelect }: NarratorGridProp
           <ChevronLeft size={16} color="#9898A6" />
         </button>
 
-        {/* Track */}
+        {/* Track — exactly 6 full cards */}
         <div
-          className="flex-1 overflow-hidden"
+          className="overflow-hidden"
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
-          style={{ touchAction: 'pan-x' }}
+          style={{
+            touchAction: 'pan-x',
+            width: `${containerWidth}px`,
+            maxWidth: '100%',
+            flexShrink: 0,
+            margin: '0 auto',
+          }}
         >
-          {/* CSS transition instead of Framer Motion animate — much faster */}
           <div
             className="flex gap-4 py-2"
             style={{
