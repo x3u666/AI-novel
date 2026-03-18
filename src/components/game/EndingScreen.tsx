@@ -99,7 +99,10 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
     : totalPlayTime;
   
   // Full epilogue text
-  const fullText = ending.finalText.join('\n\n');
+  const lastLLMNarrative = narrativeBlocks.at(-1)?.content ?? '';
+  const fullText = lastLLMNarrative.length > 100
+    ? lastLLMNarrative
+    : ending.finalText.join('\n\n');
   
   // Typewriter for epilogue
   const { displayText, isTyping, skipToEnd } = useTypewriter({
