@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Playfair_Display, Inter, Cormorant_Garamond } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MusicProvider } from "@/components/MusicProvider";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -17,17 +18,24 @@ const inter = Inter({
   display: "swap",
 });
 
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin", "cyrillic"],
+  weight: ["600"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Хроники — Интерактивная AI-новелла",
-  description: "Погрузитесь в мир интерактивных историй, созданных искусственным интеллектом. Каждое ваше решение формирует уникальное повествование.",
-  keywords: ["визуальная новелла", "AI", "интерактивная история", "игра", "повествование"],
+  title: "GenNarrative",
+  description: "Интерактивная AI-новелла с умным нарратором",
+  keywords: ["GenNarrative", "AI", "новелла", "история", "игра"],
   authors: [{ name: "Z.ai Team" }],
   icons: {
     icon: "/logo.svg",
   },
   openGraph: {
-    title: "Хроники — Интерактивная AI-новелла",
-    description: "Погрузитесь в мир интерактивных историй, созданных искусственным интеллектом",
+    title: "GenNarrative",
+    description: "Интерактивная AI-новелла с умным нарратором",
     type: "website",
   },
 };
@@ -40,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body
-        className={`${playfair.variable} ${inter.variable} font-sans antialiased`}
+        className={`${playfair.variable} ${inter.variable} ${cormorant.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"
@@ -49,6 +57,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TooltipProvider delayDuration={300}>
+            <MusicProvider />
             {children}
             <Toaster />
           </TooltipProvider>

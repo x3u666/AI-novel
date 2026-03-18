@@ -10,12 +10,14 @@ import {
   Settings,
   Home,
   Loader2,
+  Trophy,
 } from 'lucide-react';
 import { NarrativePanel } from '@/components/game/NarrativePanel';
 import { ChatPanel } from '@/components/game/ChatPanel';
 import { DiaryPanel } from '@/components/game/DiaryPanel';
 import { CharactersPanel } from '@/components/game/CharactersPanel';
 import { DecisionMap } from '@/components/game/DecisionMap';
+import { GameBackground } from '@/components/game/GameBackground';
 import { SettingsModal } from '@/components/modals/SettingsModal';
 import { useGameStore } from '@/stores/gameStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -30,6 +32,7 @@ import {
   isEndingScene,
   getEndingInfo,
 } from '@/services/narrativeService';
+import { EndingScreen } from '@/components/game/EndingScreen';
 import type { Choice, ChatMessage, NarrativeBlock } from '@/types';
 import { generateId } from '@/utils/generateId';
 import {
@@ -106,6 +109,7 @@ export default function GamePage() {
     decisions,
     currentChapter,
     isFinished,
+    endingId,
     selectedSlotIndex,
     startNewGame,
     addNarrativeBlock,
@@ -127,6 +131,7 @@ export default function GamePage() {
   const [showCharacters, setShowCharacters] = useState(false);
   const [showDecisionMap, setShowDecisionMap] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showEndingOverlay, setShowEndingOverlay] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Ref to track previous chapter for auto-save
@@ -136,6 +141,8 @@ export default function GamePage() {
   const preset = selectedNarrator
     ? getPresetById(selectedNarrator)
     : presets[0]; // Default to first preset if none selected
+
+  // 🎵 Музыкой управляет MusicProvider в layout.tsx
 
   // Auto-save hook - saves every 5 minutes and after decisions
   useAutoSave({
@@ -395,7 +402,15 @@ export default function GamePage() {
   };
 
   return (
-    <div className={`h-screen flex flex-col bg-[#0a0a0f] ${getTextSizeClass()}`}>
+    <div className={`h-screen flex flex-col relative ${getTextSizeClass()}`}>
+      {/* Themed narrator background */}
+      <GameBackground
+        narratorId={preset.id}
+        accentColor={preset.accentColor}
+      />
+
+      {/* Content above background */}
+      <div className="relative z-10 h-full flex flex-col bg-black/30">
       {/* Toolbar */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/30 backdrop-blur-sm">
         {/* Left: Logo + Narrator info */}
@@ -455,6 +470,14 @@ export default function GamePage() {
             onClick={() => setShowSettings(true)}
             active={showSettings}
           />
+          {isFinished && (
+            <ToolbarButton
+              icon={Trophy}
+              label="Концовка"
+              onClick={() => setShowEndingOverlay(true)}
+              active={showEndingOverlay}
+            />
+          )}
           <div className="w-px h-6 bg-white/10 mx-1" />
           <ToolbarButton
             icon={Home}
@@ -562,6 +585,33 @@ export default function GamePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      </div>{/* end z-10 content wrapper */}
+
+      {/* Ending overlay — shown manually via Trophy button, not auto */}
+      {showEndingOverlay && isFinished && endingId && (
+        <div className="fixed inset-0 z-50">
+          <EndingScreen
+            endingId={endingId}
+            onNewGame={() => {
+              setShowEndingOverlay(false);
+              router.push('/select-narrator');
+            }}
+            onMainMenu={() => {
+              setShowEndingOverlay(false);
+              router.push('/');
+            }}
+          />
+          {/* Close button */}
+          <button
+            onClick={() => setShowEndingOverlay(false)}
+            className="fixed top-4 right-4 z-50 w-9 h-9 rounded-lg flex items-center justify-center text-white/50 hover:text-white/90 hover:bg-white/10 transition-all"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }

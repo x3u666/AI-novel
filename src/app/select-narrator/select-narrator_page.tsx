@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore, useCallback, memo } from 'react';
+import { useState, useSyncExternalStore, useCallback, memo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
@@ -50,7 +50,13 @@ const PARTICLES: Record<PresetId, Particle[]> = {
     { id:5, x:55, y:80, size:1.5, opacity:0.06, duration:2.8, delay:1,   color:'#E8703A' },
     { id:6, x:30, y:55, size:2,   opacity:0.05, duration:3.2, delay:1.8, color:'#D45B3E' },
   ],
-  scientist: [],
+  scientist: [
+    { id:0, x:10, y:20, size:3,  opacity:0.08, duration:4,  delay:0,   color:'#00D4FF' },
+    { id:1, x:85, y:15, size:2,  opacity:0.07, duration:5,  delay:1,   color:'#00FFCC' },
+    { id:2, x:55, y:80, size:2.5,opacity:0.07, duration:3.5,delay:2,   color:'#00D4FF' },
+    { id:3, x:30, y:60, size:2,  opacity:0.06, duration:6,  delay:0.5, color:'#00FFCC' },
+    { id:4, x:70, y:50, size:3,  opacity:0.08, duration:4.5,delay:1.5, color:'#00D4FF' },
+  ],
   dark_mage: [
     { id:0, x:10, y:20, size:16, opacity:0.06, duration:12, delay:0, symbol:'∞', color:'#8B5CD4' },
     { id:1, x:30, y:55, size:12, opacity:0.06, duration:9,  delay:2, symbol:'◈', color:'#8B5CD4' },
@@ -61,17 +67,11 @@ const PARTICLES: Record<PresetId, Particle[]> = {
   ],
   detective: [],
   horror:    [],
-  poet: [
-    { id:0, x:12, y:5,  size:16, opacity:0.04, duration:12, delay:0,   symbol:'🍃' },
-    { id:1, x:40, y:-5, size:12, opacity:0.04, duration:16, delay:3,   symbol:'🍂' },
-    { id:2, x:65, y:8,  size:14, opacity:0.04, duration:10, delay:6,   symbol:'🌿' },
-    { id:3, x:82, y:-8, size:16, opacity:0.04, duration:14, delay:1.5, symbol:'🍃' },
-  ],
   comedian: [
     { id:0, x:10, y:-5,  size:5, opacity:0.06, duration:7,   delay:0,   color:'#D4A853' },
     { id:1, x:25, y:10,  size:4, opacity:0.05, duration:8,   delay:1,   color:'#D47B8E' },
     { id:2, x:45, y:-8,  size:6, opacity:0.06, duration:6,   delay:2,   color:'#4BA3D4' },
-    { id:3, x:60, y:5,   size:4, opacity:0.05, duration:9,   delay:0.5, color:'#7BA896' },
+    { id:3, x:60, y:5,   size:4, opacity:0.05, duration:9,   delay:0.5, color:'#E8A838' },
     { id:4, x:75, y:-3,  size:5, opacity:0.06, duration:7.5, delay:3,   color:'#8B5CD4' },
     { id:5, x:88, y:12,  size:3, opacity:0.05, duration:8.5, delay:1.5, color:'#D4A853' },
     { id:6, x:35, y:-10, size:5, opacity:0.06, duration:6.5, delay:4,   color:'#D47B8E' },
@@ -84,12 +84,23 @@ const GRADIENTS: Record<PresetId, string> = {
   knight:    'radial-gradient(circle at 50% 100%, rgba(212,168,83,0.04) 0%, transparent 70%)',
   romantic:  'radial-gradient(circle at 50% 50%, rgba(212,123,142,0.04) 0%, transparent 70%)',
   fighter:   'radial-gradient(circle at 100% 100%, rgba(212,91,62,0.04) 0%, transparent 70%)',
-  scientist: 'radial-gradient(circle at 50% 0%, rgba(75,163,212,0.04) 0%, transparent 70%)',
+  scientist: 'radial-gradient(circle at 50% 0%, rgba(0,212,255,0.06) 0%, transparent 70%)',
   dark_mage: 'radial-gradient(circle at 50% 50%, rgba(139,92,212,0.04) 0%, transparent 70%)',
   detective: 'radial-gradient(circle at 0% 0%, rgba(201,168,76,0.03) 0%, transparent 70%)',
   horror:    'radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.12) 100%)',
-  poet:      'radial-gradient(circle at 50% 0%, rgba(123,168,150,0.03) 0%, transparent 70%)',
   comedian:  'radial-gradient(circle at 50% 50%, rgba(232,168,56,0.04) 0%, transparent 70%)',
+};
+
+const BG_BASE: Record<PresetId, string> = {
+  neutral:   '#0e0f14',
+  knight:    '#110e05',
+  romantic:  '#130a0d',
+  fighter:   '#130805',
+  scientist: '#03080f',
+  dark_mage: '#090613',
+  detective: '#0d0b05',
+  horror:    '#0d0305',
+  comedian:  '#120d04',
 };
 
 const SCAN_LINES = [{ top:'20%', delay:0 }, { top:'50%', delay:4 }, { top:'75%', delay:8 }];
@@ -201,6 +212,7 @@ const AmbientBackground = memo(function AmbientBackground({ selectedId }: { sele
 export default function SelectNarratorPage() {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<PresetId>(defaultPreset.id);
+  const [bgId, setBgId] = useState<PresetId>(defaultPreset.id); // debounced for background
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
@@ -210,12 +222,17 @@ export default function SelectNarratorPage() {
   const selectedPreset = presets.find(p => p.id === selectedId) || null;
   const accentColor = selectedPreset?.accentColor ?? '#A8B0BC';
 
+  // Debounce background change by 500ms for smooth transition feel
+  const bgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleSelect = useCallback((id: PresetId) => {
     if (id === selectedId) return;
     const ci = presets.findIndex(p => p.id === selectedId);
     const ni = presets.findIndex(p => p.id === id);
     setSlideDirection(ni > ci ? 'left' : 'right');
     setSelectedId(id);
+    if (bgTimer.current) clearTimeout(bgTimer.current);
+    bgTimer.current = setTimeout(() => setBgId(id), 500);
   }, [selectedId]);
 
   const handleContinue = () => {
@@ -227,10 +244,15 @@ export default function SelectNarratorPage() {
   if (!mounted) return null;
 
   return (
-    <main className="relative min-h-screen overflow-hidden flex flex-col" style={{ background: '#0F0F14' }}>
+    <main className="relative min-h-screen overflow-hidden flex flex-col"
+      style={{
+        background: BG_BASE[bgId] ?? '#0F0F14',
+        transition: 'background 0.8s ease-in-out',
+      }}
+    >
 
       {/* Background — memoized, won't cause page re-render on unrelated state changes */}
-      <AmbientBackground selectedId={selectedId} />
+      <AmbientBackground selectedId={bgId} />
 
       {/* Toolbar */}
       <motion.div

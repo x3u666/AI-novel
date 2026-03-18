@@ -7,7 +7,6 @@ export type PresetId =
   | 'dark_mage'
   | 'detective'
   | 'horror'
-  | 'poet'
   | 'comedian';
 
 export interface NarratorPreset {

@@ -169,9 +169,10 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
   
   return (
     <div 
-      className="min-h-screen flex flex-col items-center justify-start py-12 px-4 relative overflow-y-auto"
+      className="min-h-screen flex flex-col items-center justify-start py-12 px-4 relative"
       style={{
         background: ending.backgroundGradient,
+        overflowY: 'scroll',
       }}
       onClick={handleSkip}
     >

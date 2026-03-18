@@ -88,8 +88,8 @@ export function NarratorGrid({ presets, selectedId, onSelect }: NarratorGridProp
 
   const translateX = -offset * cardStep;
 
-  // Exactly 6 full cards, no clipping, no fade
-  const containerWidth = 6 * cardStep - 16;
+  // +3px so the checkmark on the rightmost card isn't clipped
+  const containerWidth = 6 * cardStep - 16 + 3;
 
   return (
     <div className="flex flex-col items-center w-full max-w-[1100px] mx-auto select-none">

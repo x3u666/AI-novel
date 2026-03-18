@@ -32,17 +32,13 @@ export default function Home() {
 
   const canContinue = typeof window !== 'undefined' && hasAutoSave();
 
-  // "Новая игра" — first pick a slot, then go to narrator selection
-  const handleNewGame = () => {
-    setNewGameSlotOpen(true);
-  };
+  const handleNewGame = () => setNewGameSlotOpen(true);
 
   const handleSlotSelected = (slotIndex: number) => {
     setSelectedSlot(slotIndex);
     router.push('/select-narrator');
   };
 
-  // "Продолжить" — load auto-save (slot 0) directly
   const handleContinue = () => {
     if (canContinue) {
       loadGame(0);
@@ -52,11 +48,17 @@ export default function Home() {
 
   const titleVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.25, 0.4, 0.25, 1] } },
+    visible: {
+      opacity: 1, y: 0,
+      transition: { duration: 0.8, ease: [0.25, 0.4, 0.25, 1] as const },
+    },
   };
   const subtitleVariants = {
     hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] } },
+    visible: {
+      opacity: 1, y: 0,
+      transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] as const },
+    },
   };
   const buttonContainerVariants = {
     hidden: {},
@@ -64,7 +66,10 @@ export default function Home() {
   };
   const buttonVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] } },
+    visible: {
+      opacity: 1, y: 0,
+      transition: { duration: 0.5, ease: [0.25, 0.4, 0.25, 1] as const },
+    },
   };
 
   if (!mounted) return null;
@@ -74,23 +79,25 @@ export default function Home() {
       <AnimatedBackground />
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4">
-        {/* Title */}
         <div className="text-center mb-16">
           <motion.h1
             variants={titleVariants}
             initial="hidden"
             animate="visible"
             transition={{ delay: 0.6 }}
-            className="font-playfair text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight"
             style={{
+              fontFamily: 'var(--font-cormorant), "Cormorant Garamond", serif',
+              fontWeight: 600,
               background: 'linear-gradient(135deg, #d4af37 0%, #f4d794 50%, #d4af37 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              textShadow: '0 0 60px rgba(212, 175, 55, 0.3)',
+              fontSize: 'clamp(3rem, 9vw, 7rem)',
+              letterSpacing: '0.04em',
+              lineHeight: 1.1,
             }}
           >
-            Хроники
+            GenNarrative
           </motion.h1>
           <motion.p
             variants={subtitleVariants}
@@ -99,11 +106,10 @@ export default function Home() {
             transition={{ delay: 0.9 }}
             className="mt-4 text-lg md:text-xl text-white/60 tracking-wide"
           >
-            Интерактивная AI-новелла
+            Интерактивная AI-история
           </motion.p>
         </div>
 
-        {/* Menu buttons */}
         <motion.div
           variants={buttonContainerVariants}
           initial="hidden"
@@ -114,7 +120,6 @@ export default function Home() {
           <motion.div variants={buttonVariants}>
             <MenuButton label="Новая игра" onClick={handleNewGame} />
           </motion.div>
-
           <motion.div variants={buttonVariants}>
             <MenuButton
               label="Продолжить"
@@ -123,22 +128,18 @@ export default function Home() {
               tooltip={!canContinue ? 'Нет сохранений' : undefined}
             />
           </motion.div>
-
           <motion.div variants={buttonVariants}>
-            <MenuButton label="Загрузить игру" onClick={() => setLoadOpen(true)} />
+            <MenuButton label="Загрузить" onClick={() => setLoadOpen(true)} />
           </motion.div>
-
           <motion.div variants={buttonVariants}>
             <MenuButton label="Настройки" onClick={() => setSettingsOpen(true)} />
           </motion.div>
-
           <motion.div variants={buttonVariants}>
-            <MenuButton label="Об игре" onClick={() => setAboutOpen(true)} />
+            <MenuButton label="О проекте" onClick={() => setAboutOpen(true)} />
           </motion.div>
         </motion.div>
       </div>
 
-      {/* Version */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -148,7 +149,6 @@ export default function Home() {
         v 0.1.0
       </motion.div>
 
-      {/* Modals */}
       <AnimatePresence>
         {newGameSlotOpen && (
           <NewGameSlotModal

@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: SettingsConfig = {
   textSize: 'medium',
   typingSpeed: 50,
   autoPlaySpeed: 3000,
-  musicVolume: 50,
+  musicVolume: 5,
   sfxVolume: 70,
   theme: 'dark',
   language: 'ru',

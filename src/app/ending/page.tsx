@@ -13,6 +13,8 @@ export default function EndingPage() {
   
   // Flag to prevent redirect when navigating away
   const isNavigatingRef = useRef(false);
+
+  // 🎵 Музыкой управляет MusicProvider в layout.tsx
   
   // Wait for client-side hydration
   useEffect(() => {
