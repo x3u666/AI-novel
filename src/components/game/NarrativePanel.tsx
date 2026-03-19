@@ -49,7 +49,7 @@ export function NarrativePanel({
   const hasContent = blocks.length > 0;
 
   return (
-    <div className="h-full flex flex-col bg-[#0d0d14] border-r border-white/5">
+    <div className="h-full flex flex-col bg-transparent border-r border-white/5">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-2 px-6 py-4 border-b border-white/5">
         <BookOpen className="w-4 h-4 text-white/50" />
@@ -104,7 +104,7 @@ export function NarrativePanel({
 
       {/* Chapter indicator at bottom */}
       {hasContent && (
-        <div className="flex-shrink-0 px-6 py-3 border-t border-white/5 bg-black/20">
+        <div className="flex-shrink-0 px-6 py-3 border-t border-white/5 bg-transparent">
           <div className="flex items-center justify-between text-xs text-white/40">
             <span>Глава {currentChapter}</span>
             <span>{blocks.length} блоков</span>

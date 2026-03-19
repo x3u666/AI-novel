@@ -14,7 +14,7 @@ interface UseAutoSaveOptions {
 export function useAutoSave({
   enabled = true,
   interval = 3 * 60 * 1000, // 3 minutes
-  showToasts = true,
+  showToasts = false,
 }: UseAutoSaveOptions = {}) {
   const { toast } = useToast();
   const lastDecisionCountRef = useRef<number>(0);

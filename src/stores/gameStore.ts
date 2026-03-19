@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type {
   GameState,
   NarrativeBlock,
@@ -69,7 +70,9 @@ interface GameActions {
 
 interface GameStore extends GameState, GameActions {}
 
-export const useGameStore = create<GameStore>((set, get) => ({
+export const useGameStore = create<GameStore>()(
+  persist(
+    (set, get) => ({
   // Default state
   ...DEFAULT_GAME_STATE,
   
@@ -342,7 +345,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
       });
     }
   },
-}));
+}),
+    {
+      name: 'visual-novel-game-state',
+      partialize: (state) => ({
+        isGameStarted: state.isGameStarted,
+        isFinished: state.isFinished,
+        endingId: state.endingId,
+        selectedNarrator: state.selectedNarrator,
+        selectedSlotIndex: state.selectedSlotIndex,
+        currentChapter: state.currentChapter,
+        totalChapters: state.totalChapters,
+        chatHistory: state.chatHistory,
+        narrativeBlocks: state.narrativeBlocks,
+        decisions: state.decisions,
+        characters: state.characters,
+        currentLocation: state.currentLocation,
+        visitedLocations: state.visitedLocations,
+        currentNarrative: state.currentNarrative,
+        totalPlayTime: state.totalPlayTime,
+        availableChoices: state.availableChoices,
+        saveSlots: state.saveSlots,
+      }),
+    }
+  )
+);
 
 // Selectors
 export const selectIsGameStarted = (state: GameStore) => state.isGameStarted;

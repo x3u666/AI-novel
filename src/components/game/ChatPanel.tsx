@@ -92,7 +92,7 @@ export function ChatPanel({
   const showChoices = choices.length > 0 && !isTyping && !isTypewriterActive;
 
   return (
-    <div className="h-full flex flex-col bg-[#0a0a0f]">
+    <div className="h-full flex flex-col bg-transparent">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-2">

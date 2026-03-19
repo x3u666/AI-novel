@@ -11,6 +11,7 @@ import {
   Home,
   Loader2,
   Trophy,
+  Music2,
 } from 'lucide-react';
 import { NarrativePanel } from '@/components/game/NarrativePanel';
 import { ChatPanel } from '@/components/game/ChatPanel';
@@ -18,6 +19,7 @@ import { DiaryPanel } from '@/components/game/DiaryPanel';
 import { CharactersPanel } from '@/components/game/CharactersPanel';
 import { DecisionMap } from '@/components/game/DecisionMap';
 import { GameBackground } from '@/components/game/GameBackground';
+import { MusicPlayer } from '@/components/game/MusicPlayer';
 import { SettingsModal } from '@/components/modals/SettingsModal';
 import { useGameStore } from '@/stores/gameStore';
 import { useUIStore } from '@/stores/uiStore';
@@ -132,6 +134,7 @@ export default function GamePage() {
   const [showDecisionMap, setShowDecisionMap] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showEndingOverlay, setShowEndingOverlay] = useState(false);
+  const [showMusicPlayer, setShowMusicPlayer] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Ref to track previous chapter for auto-save
@@ -447,6 +450,12 @@ export default function GamePage() {
         {/* Right: Icon buttons */}
         <div className="flex items-center gap-1">
           <ToolbarButton
+            icon={Music2}
+            label="Музыка"
+            onClick={() => setShowMusicPlayer((v) => !v)}
+            active={showMusicPlayer}
+          />
+          <ToolbarButton
             icon={BookOpen}
             label="Журнал"
             onClick={() => setShowDiary(true)}
@@ -487,7 +496,13 @@ export default function GamePage() {
         </div>
       </header>
 
-      {/* Main content area - Two panels */}
+      {/* Music Player */}
+      <MusicPlayer
+        open={showMusicPlayer}
+        onClose={() => setShowMusicPlayer(false)}
+        accentColor={preset.accentColor}
+        trackName={preset.name}
+      />
       <main className="flex-1 flex overflow-hidden">
         {/* Loading overlay */}
         {isLoading && (

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import type { NarrativeBlock as NarrativeBlockType } from '@/types';
-import { formatDateShort } from '@/utils/formatDate';
+import { formatTimeShort } from '@/utils/formatDate';
 
 interface NarrativeBlockProps {
   block: NarrativeBlockType;
@@ -58,7 +58,7 @@ export function NarrativeBlock({
       {/* Timestamp */}
       {block.timestamp && (
         <div className="mt-2 text-xs text-white/30">
-          {formatDateShort(block.timestamp)}
+          {formatTimeShort(block.timestamp)}
         </div>
       )}
 

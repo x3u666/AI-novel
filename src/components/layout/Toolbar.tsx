@@ -1,13 +1,15 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Settings,
   Home,
   BookOpen,
   Save,
-  ChevronLeft
+  ChevronLeft,
+  Music2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +18,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { MusicPlayer } from '@/components/game/MusicPlayer';
 
 interface ToolbarProps {
   title: string;
@@ -24,8 +27,11 @@ interface ToolbarProps {
   showDiary?: boolean;
   showSave?: boolean;
   showBack?: boolean;
+  showMusic?: boolean;
   presetIndicator?: { color: string; name: string };
   chapterNumber?: number;
+  accentColor?: string;
+  trackName?: string;
   onSettingsClick?: () => void;
   onSaveClick?: () => void;
   onDiaryClick?: () => void;
@@ -40,8 +46,11 @@ export function Toolbar({
   showDiary = false,
   showSave = false,
   showBack = false,
+  showMusic = false,
   presetIndicator,
   chapterNumber,
+  accentColor = '#d4af37',
+  trackName,
   onSettingsClick,
   onSaveClick,
   onDiaryClick,
@@ -49,6 +58,7 @@ export function Toolbar({
   className,
 }: ToolbarProps) {
   const router = useRouter();
+  const [musicOpen, setMusicOpen] = useState(false);
 
   const handleHomeClick = () => {
     router.push('/');
@@ -59,6 +69,7 @@ export function Toolbar({
   };
 
   return (
+    <>
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -133,6 +144,23 @@ export function Toolbar({
 
       {/* Right Section - Action Buttons */}
       <div className="flex items-center gap-1 md:gap-2">
+        {showMusic && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMusicOpen((v) => !v)}
+                className="text-white/70 hover:text-white hover:bg-white/10"
+                style={musicOpen ? { color: accentColor } : {}}
+              >
+                <Music2 className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Музыка</TooltipContent>
+          </Tooltip>
+        )}
+
         {showSave && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -206,5 +234,14 @@ export function Toolbar({
         )}
       </div>
     </motion.header>
+
+    {/* Music Player widget */}
+    <MusicPlayer
+      open={musicOpen}
+      onClose={() => setMusicOpen(false)}
+      accentColor={accentColor}
+      trackName={trackName}
+    />
+    </>
   );
 }
