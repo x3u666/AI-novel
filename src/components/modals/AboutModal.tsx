@@ -71,76 +71,30 @@ export function AboutModal({ open, onOpenChange }: AboutModalProps) {
               </li>
             </ul>
           </div>
-
-          <Separator className="bg-white/10" />
-
-          {/* Controls */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider flex items-center gap-2">
-              <Keyboard className="h-4 w-4" />
-              Управление
-            </h3>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-white/70 font-mono text-xs">
-                  Space
-                </kbd>
-                <span className="text-white/70">Продолжить</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-white/70 font-mono text-xs">
-                  A
-                </kbd>
-                <span className="text-white/70">Автопрокрутка</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-white/70 font-mono text-xs">
-                  S
-                </kbd>
-                <span className="text-white/70">Пропустить</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-white/70 font-mono text-xs">
-                  Esc
-                </kbd>
-                <span className="text-white/70">Меню</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-white/70 font-mono text-xs">
-                  1-4
-                </kbd>
-                <span className="text-white/70">Выбор</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <kbd className="px-2 py-1 bg-white/10 rounded text-white/70 font-mono text-xs">
-                  F
-                </kbd>
-                <span className="text-white/70">Полный экран</span>
-              </div>
-            </div>
-          </div>
-
           <Separator className="bg-white/10" />
 
           {/* Credits */}
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider flex items-center gap-2">
               <Heart className="h-4 w-4 text-red-400" />
-              Благодарности
+              Команда
             </h3>
-            <div className="text-white/80 text-sm space-y-1">
-              <p>
-                <span className="text-white/50">Разработка:</span> Z.ai Team
+            <div className="text-white/80 text-sm space-y-2">
+              <p className="flex items-center gap-2">
+                <span className="text-[#d4af37]">•</span>
+                Аристархов Владимир
               </p>
-              <p>
-                <span className="text-white/50">Дизайн:</span> Z.ai Team
+              <p className="flex items-center gap-2">
+                <span className="text-[#d4af37]">•</span>
+                Шарафутдинов Мунир
               </p>
-              <p>
-                <span className="text-white/50">AI-движок:</span> Z.ai
+              <p className="flex items-center gap-2">
+                <span className="text-[#d4af37]">•</span>
+                Можаев Константин
               </p>
             </div>
             <p className="text-xs text-white/40 mt-4">
-              Версия 0.1.0 • © 2024 Все права защищены
+              Версия 0.1.0 • © 2026 Все права защищены
             </p>
           </div>
         </div>
