@@ -124,7 +124,7 @@ export default function GamePage() {
 
   // UI state
   const { isTyping, setTyping, setLoading, isLoading } = useUIStore();
-  const { textSize } = useSettingsStore();
+  const { textSize, gameFont } = useSettingsStore();
 
   // Local state
   const [currentSceneId, setCurrentSceneId] = useState<string>('scene_intro');
@@ -404,8 +404,20 @@ export default function GamePage() {
     }
   };
 
+  const fontFamilyMap: Record<string, string> = {
+    inter:    '"Inter", sans-serif',
+    bookerly: '"Bookerly", "Georgia", serif',
+    literata: '"Literata", "Georgia", serif',
+    garamond: '"Garamond", "EB Garamond", serif',
+    georgia:  '"Georgia", serif',
+  };
+  const gameFontFamily = fontFamilyMap[gameFont ?? 'inter'] ?? '"Inter", sans-serif';
+
   return (
-    <div className={`h-screen flex flex-col relative ${getTextSizeClass()}`}>
+    <div
+      className={`h-screen flex flex-col relative ${getTextSizeClass()}`}
+      style={{ '--game-font': gameFontFamily } as React.CSSProperties}
+    >
       {/* Themed narrator background */}
       <GameBackground
         narratorId={preset.id}
@@ -420,8 +432,8 @@ export default function GamePage() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span
-              className="font-serif text-xl font-semibold"
-              style={{ color: preset.accentColor }}
+              className="font-serif font-semibold"
+              style={{ color: preset.accentColor, fontSize: '1.1em' }}
             >
               GenNarrative
             </span>
@@ -429,18 +441,18 @@ export default function GamePage() {
           
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5">
             <div
-              className="w-3 h-3 rounded-full"
+              className="w-3 h-3 rounded-full flex-shrink-0"
               style={{ backgroundColor: preset.accentColor }}
             />
-            <span className="text-sm text-white/70">{preset.name}</span>
+            <span className="text-white/70">{preset.name}</span>
           </div>
         </div>
 
         {/* Center: Chapter indicator */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-white/50">Глава</span>
+          <span className="text-white/50">Глава</span>
           <span
-            className="text-sm font-medium"
+            className="font-medium"
             style={{ color: preset.accentColor }}
           >
             {currentChapter}
@@ -523,8 +535,8 @@ export default function GamePage() {
           </motion.div>
         )}
 
-        {/* Left Panel - Narrative */}
-        <div className="w-[50%] min-w-[400px] max-w-[700px]">
+        {/* Left Panel - Narrative — 60% */}
+        <div className="w-[60%] min-w-[380px] max-w-[900px] border-r border-white/15" style={{ fontFamily: gameFontFamily }}>
           <NarrativePanel
             blocks={narrativeBlocks}
             decisions={decisions}
@@ -533,8 +545,8 @@ export default function GamePage() {
           />
         </div>
 
-        {/* Right Panel - Chat */}
-        <div className="flex-1">
+        {/* Right Panel - Chat — 40% */}
+        <div className="flex-1" style={{ fontFamily: gameFontFamily }}>
           <ChatPanel
             messages={chatHistory}
             preset={preset}
@@ -605,7 +617,7 @@ export default function GamePage() {
 
       {/* Ending overlay — shown manually via Trophy button, not auto */}
       {showEndingOverlay && isFinished && endingId && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 overflow-y-auto">
           <EndingScreen
             endingId={endingId}
             onNewGame={() => {

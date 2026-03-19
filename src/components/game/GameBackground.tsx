@@ -38,14 +38,11 @@ const BG_CONFIGS: Record<PresetId, { base: string; blobs: { x: string; y: string
     ],
   },
   scientist: {
-    base: '#00080f',
+    base: '#03080f',
     blobs: [
-      { x: '50%', y: '95%', color: 'rgba(0,150,255,0.35)', size: 800 },
-      { x: '15%', y: '70%', color: 'rgba(0,100,220,0.22)', size: 500 },
-      { x: '85%', y: '65%', color: 'rgba(0,200,255,0.18)', size: 450 },
-      { x: '50%', y: '40%', color: 'rgba(0,80,180,0.16)', size: 400 },
-      { x: '30%', y: '30%', color: 'rgba(0,120,255,0.10)', size: 350 },
-      { x: '70%', y: '25%', color: 'rgba(100,0,255,0.08)', size: 300 },
+      { x: '15%', y: '15%', color: 'rgba(0,212,255,0.25)', size: 500 },
+      { x: '80%', y: '70%', color: 'rgba(0,160,220,0.18)', size: 380 },
+      { x: '50%', y: '45%', color: 'rgba(0,255,200,0.12)', size: 300 },
     ],
   },
   dark_mage: {
@@ -115,56 +112,14 @@ function PatternSVG({ id, accentColor }: { id: PresetId; accentColor: string }) 
     case 'scientist':
       return (
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <filter id="blur-city">
-              <feGaussianBlur stdDeviation="0.6"/>
-            </filter>
-            <filter id="blur-soft">
-              <feGaussianBlur stdDeviation="0.3"/>
-            </filter>
-            <filter id="neon-glow">
-              <feGaussianBlur stdDeviation="0.8" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-
-          {/* Размытый силуэт города на горизонте */}
-          <g filter="url(#blur-city)" opacity="0.7">
-            <path d="M0,75 L4,75 L4,65 L7,65 L7,60 L10,60 L10,55 L13,55 L13,60 L16,60 L16,68 L19,68 L19,62 L22,62 L22,57 L25,57 L25,50 L28,50 L28,45 L31,45 L31,50 L34,50 L34,57 L37,57 L37,63 L40,63 L40,58 L43,58 L43,52 L46,52 L46,47 L49,47 L49,43 L52,43 L52,47 L55,47 L55,52 L58,52 L58,58 L61,58 L61,63 L64,63 L64,57 L67,57 L67,51 L70,51 L70,57 L73,57 L73,62 L76,62 L76,56 L79,56 L79,50 L82,50 L82,56 L85,56 L85,62 L88,62 L88,67 L91,67 L91,72 L94,72 L94,75 L100,75 L100,100 L0,100 Z"
-              fill="rgba(0,8,20,0.85)" stroke="rgba(0,150,255,0.25)" strokeWidth="0.3"/>
-          </g>
-
-          {/* Закатное солнце — размытое */}
-          <g filter="url(#blur-soft)">
-            <circle cx="50" cy="75" r="20" fill="rgba(0,100,255,0.12)" />
-            <circle cx="50" cy="75" r="14" fill="rgba(0,150,255,0.10)" />
-            <circle cx="50" cy="75" r="8"  fill="rgba(0,200,255,0.08)" />
-          </g>
-
-          {/* Лучи заката */}
-          <line x1="0" y1="70" x2="100" y2="70" stroke="rgba(0,150,255,0.18)" strokeWidth="0.5"/>
-          <line x1="0" y1="65" x2="100" y2="65" stroke="rgba(0,130,255,0.13)" strokeWidth="0.4"/>
-          <line x1="0" y1="60" x2="100" y2="60" stroke="rgba(0,110,255,0.09)" strokeWidth="0.3"/>
-          <line x1="0" y1="54" x2="100" y2="54" stroke="rgba(0,90,255,0.07)" strokeWidth="0.2"/>
-
-
-
-          {/* Сканлайны */}
-          {Array.from({length: 18}).map((_, i) => (
-            <line key={i} x1="0" y1={i * 5.5} x2="100" y2={i * 5.5}
-              stroke="rgba(0,0,0,0.12)" strokeWidth="0.8"/>
-          ))}
-
-          {/* Глитч-полосы */}
-          <rect x="0" y="22" width="100" height="0.6" fill="rgba(0,100,255,0.08)"/>
-          <rect x="0" y="37" width="60"  height="0.4" fill="rgba(0,200,255,0.07)"/>
-          <rect x="40" y="15" width="100" height="0.4" fill="rgba(100,0,255,0.06)"/>
-
-          {/* Дождь */}
-          {[8,15,23,31,39,47,55,63,71,79,87,93].map((x, i) => (
-            <line key={i} x1={x} y1={20 + (i % 4) * 5} x2={x - 1} y2={28 + (i % 4) * 5}
-              stroke="rgba(0,150,255,0.15)" strokeWidth="0.3"/>
-          ))}
+          <polygon points="50,8 58,13 58,23 50,28 42,23 42,13" stroke={a(0.18)} strokeWidth="0.5" fill="none"/>
+          <polygon points="20,60 28,65 28,75 20,80 12,75 12,65" stroke={a(0.12)} strokeWidth="0.3" fill="none"/>
+          <polygon points="80,30 88,35 88,45 80,50 72,45 72,35" stroke={a(0.10)} strokeWidth="0.3" fill="none"/>
+          <line x1="50" y1="28" x2="50" y2="40" stroke={a(0.10)} strokeWidth="0.4"/>
+          <line x1="50" y1="40" x2="72" y2="40" stroke={a(0.10)} strokeWidth="0.4"/>
+          <line x1="0" y1="92" x2="100" y2="92" stroke={a(0.14)} strokeWidth="1.0"/>
+          <circle cx="75" cy="22" r="2" fill={a(0.22)}/>
+          <circle cx="25" cy="78" r="2" fill={a(0.18)}/>
         </svg>
       );
     case 'dark_mage':
@@ -241,8 +196,11 @@ export function GameBackground({ narratorId, accentColor }: GameBackgroundProps)
         <PatternSVG id={narratorId} accentColor={accentColor} />
       </div>
 
-      {/* Dark overlay — makes content readable without hiding background */}
-      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.25)' }} />
+      {/* Dark overlay */}
+      <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.30)' }} />
+
+      {/* Blur overlay — stronger to soften background without hiding it */}
+      <div className="absolute inset-0" style={{ backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} />
 
       {/* Vignette */}
       <div

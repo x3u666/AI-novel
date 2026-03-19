@@ -23,19 +23,29 @@ export interface NarrativeResponse {
 
 async function callGroq(
   systemPrompt: string,
-  messages: { role: string; content: string }[]
+  messages: { role: string; content: string }[],
+  retries = 2
 ): Promise<string> {
-  const response = await fetch('/api/narrative', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ systemPrompt, messages }),
-  });
-  if (!response.ok) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    const response = await fetch('/api/narrative', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ systemPrompt, messages }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return (data.content as string) ?? '';
+    }
     const err = await response.text();
-    throw new Error(`Groq API error ${response.status}: ${err}`);
+    console.error(`[callGroq] attempt ${attempt}/${retries} — status:`, response.status, 'body:', err);
+    // Retry on network errors (502) but not on auth/client errors
+    if (response.status !== 502 || attempt === retries) {
+      throw new Error(`Groq API error ${response.status}: ${err}`);
+    }
+    // Wait 1s before retry
+    await new Promise(r => setTimeout(r, 1000));
   }
-  const data = await response.json();
-  return (data.content as string) ?? '';
+  throw new Error('Groq: all retries exhausted');
 }
 
 function extractTag(text: string, tag: string): string | null {

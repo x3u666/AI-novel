@@ -257,6 +257,183 @@ const AmbientBackground = memo(function AmbientBackground({ selectedId }: { sele
           })}
         </div>
       )}
+
+      {/* SVG decorative patterns per narrator — animated */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+
+        {/* NEUTRAL — drifting grid */}
+        {selectedId === 'neutral' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.line x1="0" y1="25" x2="100" y2="25" stroke="rgba(168,176,188,0.06)" strokeWidth="0.3"
+              animate={{ opacity:[0.3,0.7,0.3] }} transition={{ duration:6, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.line x1="0" y1="50" x2="100" y2="50" stroke="rgba(168,176,188,0.06)" strokeWidth="0.3"
+              animate={{ opacity:[0.5,0.9,0.5] }} transition={{ duration:8, repeat:Infinity, ease:'easeInOut', delay:1 }}/>
+            <motion.line x1="0" y1="75" x2="100" y2="75" stroke="rgba(168,176,188,0.06)" strokeWidth="0.3"
+              animate={{ opacity:[0.3,0.7,0.3] }} transition={{ duration:7, repeat:Infinity, ease:'easeInOut', delay:2 }}/>
+            <line x1="25" y1="0" x2="25" y2="100" stroke="rgba(168,176,188,0.04)" strokeWidth="0.3"/>
+            <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(168,176,188,0.04)" strokeWidth="0.3"/>
+            <line x1="75" y1="0" x2="75" y2="100" stroke="rgba(168,176,188,0.04)" strokeWidth="0.3"/>
+            <motion.circle cx="50" cy="50" r="18" stroke="rgba(168,176,188,0.10)" strokeWidth="0.4" fill="none" strokeDasharray="2 3"
+              animate={{ rotate: 360 }} transition={{ duration:30, repeat:Infinity, ease:'linear' }}
+              style={{ transformOrigin:'50% 50%' }}/>
+            <motion.path d="M50,32 L51.5,48 L50,50 L48.5,48 Z" fill="rgba(168,176,188,0.12)"
+              animate={{ opacity:[0.5,1,0.5] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }}/>
+          </svg>
+        )}
+
+        {/* KNIGHT — glowing shield + rotating star */}
+        {selectedId === 'knight' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.path d="M15,10 L25,10 L25,22 L20,26 L15,22 Z" stroke="rgba(212,168,83,0.18)" strokeWidth="0.5" fill="none"
+              animate={{ opacity:[0.4,0.9,0.4] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }}/>
+            <line x1="8" y1="55" x2="32" y2="79" stroke="rgba(212,168,83,0.12)" strokeWidth="0.5"/>
+            <line x1="12" y1="79" x2="28" y2="55" stroke="rgba(212,168,83,0.12)" strokeWidth="0.5"/>
+            <motion.circle cx="20" cy="67" r="1.5" fill="rgba(212,168,83,0.25)"
+              animate={{ opacity:[0.3,1,0.3] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.path d="M60,5 L62,11 L68,11 L63,15 L65,21 L60,17 L55,21 L57,15 L52,11 L58,11 Z"
+              stroke="rgba(212,168,83,0.20)" strokeWidth="0.4" fill="none"
+              animate={{ rotate:[0,360] }} transition={{ duration:20, repeat:Infinity, ease:'linear' }}
+              style={{ transformOrigin:'60% 13%' }}/>
+            <motion.path d="M0,35 Q25,28 50,35 Q75,42 100,35" stroke="rgba(212,168,83,0.08)" strokeWidth="0.4" fill="none"
+              animate={{ opacity:[0.3,0.8,0.3] }} transition={{ duration:6, repeat:Infinity, ease:'easeInOut', delay:1 }}/>
+            <motion.path d="M0,40 Q25,33 50,40 Q75,47 100,40" stroke="rgba(212,168,83,0.05)" strokeWidth="0.3" fill="none"
+              animate={{ opacity:[0.2,0.6,0.2] }} transition={{ duration:8, repeat:Infinity, ease:'easeInOut', delay:2 }}/>
+          </svg>
+        )}
+
+        {/* ROMANTIC — floating hearts + pulsing circles */}
+        {selectedId === 'romantic' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.path d="M45,12 C43,9 38,10 38,14 C38,18 45,22 45,22 C45,22 52,18 52,14 C52,10 47,9 45,12Z"
+              stroke="rgba(212,123,142,0.20)" strokeWidth="0.4" fill="none"
+              animate={{ y:[0,-3,0], opacity:[0.4,1,0.4] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.path d="M10,30 C20,10 40,10 30,30 C20,50 10,50 10,30Z" stroke="rgba(212,123,142,0.14)" strokeWidth="0.4" fill="none"
+              animate={{ opacity:[0.3,0.7,0.3] }} transition={{ duration:5, repeat:Infinity, ease:'easeInOut', delay:1 }}/>
+            <motion.circle cx="80" cy="20" r="8" stroke="rgba(212,123,142,0.12)" strokeWidth="0.4" fill="none" strokeDasharray="1 2"
+              animate={{ scale:[1,1.15,1], opacity:[0.4,0.8,0.4] }} transition={{ duration:6, repeat:Infinity, ease:'easeInOut' }}
+              style={{ transformOrigin:'80% 20%' }}/>
+            <motion.path d="M5,55 Q30,40 55,55 Q80,70 95,55" stroke="rgba(212,123,142,0.10)" strokeWidth="0.4" fill="none"
+              animate={{ opacity:[0.2,0.6,0.2] }} transition={{ duration:7, repeat:Infinity, ease:'easeInOut', delay:0.5 }}/>
+          </svg>
+        )}
+
+        {/* FIGHTER — flashing crosshair */}
+        {selectedId === 'fighter' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <line x1="0" y1="0" x2="40" y2="40" stroke="rgba(212,91,62,0.08)" strokeWidth="0.5"/>
+            <line x1="100" y1="0" x2="60" y2="40" stroke="rgba(212,91,62,0.08)" strokeWidth="0.4"/>
+            <motion.circle cx="50" cy="50" r="15" stroke="rgba(212,91,62,0.16)" strokeWidth="0.5" fill="none"
+              animate={{ scale:[1,1.08,1], opacity:[0.5,1,0.5] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut' }}
+              style={{ transformOrigin:'50% 50%' }}/>
+            <motion.circle cx="50" cy="50" r="8" stroke="rgba(212,91,62,0.12)" strokeWidth="0.4" fill="none"
+              animate={{ scale:[1,1.12,1] }} transition={{ duration:2.5, repeat:Infinity, ease:'easeInOut', delay:0.3 }}
+              style={{ transformOrigin:'50% 50%' }}/>
+            <motion.circle cx="50" cy="50" r="2.5" fill="rgba(212,91,62,0.30)"
+              animate={{ opacity:[0.5,1,0.5] }} transition={{ duration:1.5, repeat:Infinity, ease:'easeInOut' }}/>
+            <line x1="35" y1="50" x2="42" y2="50" stroke="rgba(212,91,62,0.16)" strokeWidth="0.6"/>
+            <line x1="58" y1="50" x2="65" y2="50" stroke="rgba(212,91,62,0.16)" strokeWidth="0.6"/>
+            <line x1="50" y1="35" x2="50" y2="42" stroke="rgba(212,91,62,0.16)" strokeWidth="0.6"/>
+            <line x1="50" y1="58" x2="50" y2="65" stroke="rgba(212,91,62,0.16)" strokeWidth="0.6"/>
+          </svg>
+        )}
+
+        {/* CYBERPUNK — minimal: 3 hexagons + blinking dots */}
+        {selectedId === 'scientist' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.polygon points="50,8 58,13 58,23 50,28 42,23 42,13"
+              stroke="rgba(0,212,255,0.20)" strokeWidth="0.5" fill="none"
+              animate={{ opacity:[0.4,1,0.4] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut' }}/>
+            <polygon points="20,60 28,65 28,75 20,80 12,75 12,65" stroke="rgba(0,212,255,0.12)" strokeWidth="0.3" fill="none"/>
+            <polygon points="80,30 88,35 88,45 80,50 72,45 72,35" stroke="rgba(0,212,255,0.10)" strokeWidth="0.3" fill="none"/>
+            <line x1="50" y1="28" x2="50" y2="40" stroke="rgba(0,212,255,0.10)" strokeWidth="0.4"/>
+            <line x1="50" y1="40" x2="72" y2="40" stroke="rgba(0,212,255,0.10)" strokeWidth="0.4"/>
+            <motion.line x1="0" y1="90" x2="100" y2="90" stroke="rgba(0,255,200,0.14)" strokeWidth="1"
+              animate={{ opacity:[0.3,0.8,0.3] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.circle cx="85" cy="15" r="2.5" fill="rgba(0,212,255,0.30)"
+              animate={{ opacity:[0.2,1,0.2] }} transition={{ duration:2, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.circle cx="15" cy="45" r="2" fill="rgba(0,255,200,0.25)"
+              animate={{ opacity:[0.2,1,0.2] }} transition={{ duration:2.5, repeat:Infinity, ease:'easeInOut', delay:0.7 }}/>
+          </svg>
+        )}
+
+        {/* DARK MAGE — rotating ritual circles */}
+        {selectedId === 'dark_mage' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.circle cx="50" cy="50" r="32" stroke="rgba(139,92,212,0.14)" strokeWidth="0.4" fill="none" strokeDasharray="2 2"
+              animate={{ rotate:360 }} transition={{ duration:25, repeat:Infinity, ease:'linear' }}
+              style={{ transformOrigin:'50% 50%' }}/>
+            <circle cx="50" cy="50" r="22" stroke="rgba(139,92,212,0.10)" strokeWidth="0.3" fill="none"/>
+            <motion.circle cx="50" cy="50" r="10" stroke="rgba(139,92,212,0.18)" strokeWidth="0.4" fill="none" strokeDasharray="1 2"
+              animate={{ rotate:-360 }} transition={{ duration:15, repeat:Infinity, ease:'linear' }}
+              style={{ transformOrigin:'50% 50%' }}/>
+            <motion.polygon points="50,20 74,58 26,58" stroke="rgba(139,92,212,0.16)" strokeWidth="0.4" fill="none"
+              animate={{ opacity:[0.4,0.9,0.4] }} transition={{ duration:5, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.circle cx="50" cy="20" r="2" fill="rgba(139,92,212,0.35)"
+              animate={{ opacity:[0.3,1,0.3] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.circle cx="74" cy="58" r="2" fill="rgba(139,92,212,0.28)"
+              animate={{ opacity:[0.3,1,0.3] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut', delay:1 }}/>
+            <motion.circle cx="26" cy="58" r="2" fill="rgba(139,92,212,0.28)"
+              animate={{ opacity:[0.3,1,0.3] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut', delay:2 }}/>
+          </svg>
+        )}
+
+        {/* DETECTIVE — scanning magnifier */}
+        {selectedId === 'detective' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.g animate={{ x:[0,3,0], y:[0,2,0] }} transition={{ duration:8, repeat:Infinity, ease:'easeInOut' }}>
+              <circle cx="35" cy="35" r="16" stroke="rgba(201,168,76,0.16)" strokeWidth="0.5" fill="none"/>
+              <circle cx="35" cy="35" r="10" stroke="rgba(201,168,76,0.12)" strokeWidth="0.3" fill="none"/>
+              <line x1="46" y1="46" x2="58" y2="58" stroke="rgba(201,168,76,0.18)" strokeWidth="1.2"/>
+            </motion.g>
+            <motion.line x1="0" y1="68" x2="100" y2="68" stroke="rgba(201,168,76,0.08)" strokeWidth="0.3"
+              animate={{ opacity:[0.2,0.6,0.2] }} transition={{ duration:5, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.circle cx="80" cy="80" r="8" stroke="rgba(201,168,76,0.12)" strokeWidth="0.3" fill="none" strokeDasharray="1.5 2"
+              animate={{ rotate:360 }} transition={{ duration:20, repeat:Infinity, ease:'linear' }}
+              style={{ transformOrigin:'80% 80%' }}/>
+          </svg>
+        )}
+
+        {/* HORROR — blinking eye + pulsing web */}
+        {selectedId === 'horror' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.ellipse cx="50" cy="30" rx="25" ry="12" stroke="rgba(139,46,59,0.18)" strokeWidth="0.4" fill="none"
+              animate={{ scaleY:[1,0.1,1], opacity:[0.5,1,0.5] }}
+              transition={{ duration:5, repeat:Infinity, ease:'easeInOut', times:[0,0.5,1] }}
+              style={{ transformOrigin:'50% 30%' }}/>
+            <motion.circle cx="50" cy="30" r="4" fill="rgba(139,46,59,0.25)"
+              animate={{ scale:[1,0.1,1] }}
+              transition={{ duration:5, repeat:Infinity, ease:'easeInOut', times:[0,0.5,1] }}
+              style={{ transformOrigin:'50% 30%' }}/>
+            <motion.path d="M0,75 Q16,68 33,75 Q50,82 67,75 Q84,68 100,75" stroke="rgba(139,46,59,0.12)" strokeWidth="0.4" fill="none"
+              animate={{ opacity:[0.2,0.6,0.2] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }}/>
+            <path d="M5,5 L20,25 M5,5 L25,10 M5,5 L15,30" stroke="rgba(139,46,59,0.08)" strokeWidth="0.3"/>
+          </svg>
+        )}
+
+        {/* COMEDIAN — bouncing shapes */}
+        {selectedId === 'comedian' && (
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+            <motion.path d="M20,15 L23,20 L20,25 L17,20 Z" stroke="rgba(232,168,56,0.22)" strokeWidth="0.5" fill="none"
+              animate={{ y:[0,-4,0], rotate:[0,15,0] }} transition={{ duration:3, repeat:Infinity, ease:'easeInOut' }}
+              style={{ transformOrigin:'20% 20%' }}/>
+            <motion.path d="M75,10 L78,15 L75,20 L72,15 Z" stroke="rgba(232,168,56,0.18)" strokeWidth="0.4" fill="none"
+              animate={{ y:[0,-3,0], rotate:[0,-10,0] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut', delay:0.5 }}
+              style={{ transformOrigin:'75% 15%' }}/>
+            <motion.path d="M20,60 Q35,75 50,60 Q65,45 80,60" stroke="rgba(232,168,56,0.15)" strokeWidth="0.6" fill="none"
+              animate={{ opacity:[0.4,0.9,0.4] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }}/>
+            <motion.circle cx="25" cy="58" r="2.5" fill="rgba(232,168,56,0.22)"
+              animate={{ scale:[1,1.4,1] }} transition={{ duration:2, repeat:Infinity, ease:'easeInOut' }}
+              style={{ transformOrigin:'25% 58%' }}/>
+            <motion.circle cx="75" cy="58" r="2.5" fill="rgba(232,168,56,0.22)"
+              animate={{ scale:[1,1.4,1] }} transition={{ duration:2, repeat:Infinity, ease:'easeInOut', delay:1 }}
+              style={{ transformOrigin:'75% 58%' }}/>
+            <motion.circle cx="50" cy="20" r="8" stroke="rgba(232,168,56,0.12)" strokeWidth="0.4" fill="none" strokeDasharray="2 1.5"
+              animate={{ rotate:360 }} transition={{ duration:12, repeat:Infinity, ease:'linear' }}
+              style={{ transformOrigin:'50% 20%' }}/>
+          </svg>
+        )}
+
+      </div>
     </>
   );
 });

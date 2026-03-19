@@ -69,6 +69,8 @@ export function LoadGameModal({ open, onOpenChange, onLoad }: LoadGameModalProps
   const handleDelete = () => {
     if (deleteConfirm !== null) {
       deleteSlot(deleteConfirm);
+      // Also clear auto-save (slot 0) so Continue button won't load a deleted save
+      deleteSlot(0);
       setSlots(getUserSlots());
       setDeleteConfirm(null);
     }

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Choice } from '@/types';
 import { ChevronRight } from 'lucide-react';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 interface ChoiceButtonsProps {
   choices: Choice[];
@@ -93,6 +94,18 @@ export function ChoiceButtons({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
+  const gameFont = useSettingsStore((s) => s.gameFont);
+  const textSize = useSettingsStore((s) => s.textSize);
+
+  const fontFamilyMap: Record<string, string> = {
+    inter:    '"Inter", sans-serif',
+    bookerly: '"Bookerly", "Georgia", serif',
+    literata: '"Literata", "Georgia", serif',
+    garamond: '"Garamond", "EB Garamond", serif',
+    georgia:  '"Georgia", serif',
+  };
+  const fontFamily = fontFamilyMap[gameFont ?? 'inter'] ?? '"Inter", sans-serif';
+  const fontSize = textSize === 'small' ? '13px' : textSize === 'medium' ? '15px' : textSize === 'large' ? '17px' : '19px';
 
   const handleClick = (choice: Choice) => {
     if (disabled || choice.disabled) return;
@@ -178,8 +191,8 @@ export function ChoiceButtons({
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{emoji}</span>
-                  <span className="flex-1 text-white/90">{choice.text}</span>
+                  <span className="text-xl flex-shrink-0">{emoji}</span>
+                  <span className="flex-1 text-white/90" style={{ fontFamily, fontSize }}>{choice.text}</span>
                   <ChevronRight
                     className="w-4 h-4 transition-transform duration-200"
                     style={{

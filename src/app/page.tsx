@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedBackground } from '@/components/menu/AnimatedBackground';
@@ -25,12 +25,30 @@ export default function Home() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [loadOpen, setLoadOpen] = useState(false);
   const [newGameSlotOpen, setNewGameSlotOpen] = useState(false);
+  const [canContinue, setCanContinue] = useState(false);
 
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
   const { loadGame, setSelectedSlot } = useGameStore();
 
-  const canContinue = typeof window !== 'undefined' && hasAutoSave();
+  const refreshCanContinue = useCallback(() => {
+    setCanContinue(typeof window !== 'undefined' && hasAutoSave());
+  }, []);
+
+  // Initial check after mount
+  useEffect(() => {
+    if (mounted) refreshCanContinue();
+  }, [mounted, refreshCanContinue]);
+
+  // Re-check when modals close (user may have deleted saves)
+  const handleLoadOpenChange = (open: boolean) => {
+    setLoadOpen(open);
+    if (!open) refreshCanContinue();
+  };
+
+  const handleNewGameSlotOpenChange = (open: boolean) => {
+    setNewGameSlotOpen(open);
+    if (!open) refreshCanContinue();
+  };
 
   const handleNewGame = () => setNewGameSlotOpen(true);
 
@@ -153,7 +171,7 @@ export default function Home() {
         {newGameSlotOpen && (
           <NewGameSlotModal
             open={newGameSlotOpen}
-            onOpenChange={setNewGameSlotOpen}
+            onOpenChange={handleNewGameSlotOpenChange}
             onSlotSelected={handleSlotSelected}
           />
         )}
@@ -164,7 +182,7 @@ export default function Home() {
           <AboutModal open={aboutOpen} onOpenChange={setAboutOpen} />
         )}
         {loadOpen && (
-          <LoadGameModal open={loadOpen} onOpenChange={setLoadOpen} />
+          <LoadGameModal open={loadOpen} onOpenChange={handleLoadOpenChange} />
         )}
       </AnimatePresence>
     </main>

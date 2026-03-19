@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import type { NarratorPreset, PresetId } from '@/types/narrator';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 // Avatar emoji mapping
 const presetEmojis: Record<PresetId, string> = {
@@ -38,6 +39,9 @@ interface NarratorDetailsProps {
 }
 
 export function NarratorDetails({ preset, slideDirection = 'left' }: NarratorDetailsProps) {
+  const textSize = useSettingsStore((s) => s.textSize);
+  const descFontSize = textSize === 'small' ? '13px' : textSize === 'medium' ? '15px' : textSize === 'large' ? '17px' : '19px';
+
   if (!preset) {
     return (
       <div className="flex items-center justify-center h-full" style={{ color: '#9898A6' }}>
@@ -50,7 +54,6 @@ export function NarratorDetails({ preset, slideDirection = 'left' }: NarratorDet
   const avatarGradient = presetAvatarGradients[preset.id];
   const paragraphs = preset.description.split('\n\n').filter(Boolean);
 
-  // Slide in from right if new preset is to the right, from left if to the left
   const xIn = slideDirection === 'left' ? 15 : -15;
   const xOut = slideDirection === 'left' ? -15 : 15;
 
@@ -120,17 +123,18 @@ export function NarratorDetails({ preset, slideDirection = 'left' }: NarratorDet
           </div>
         </div>
 
-        {/* ── Description paragraphs (text flows around the float avatar) ── */}
+        {/* ── Description paragraphs ── */}
         <div style={{ overflow: 'hidden' }}>
           {paragraphs.map((para, i) => (
             <p
               key={i}
               style={{
                 fontFamily: '"Playfair Display", Georgia, serif',
-                fontSize: 'clamp(14px, 1.5vw, 16px)',
+                fontSize: descFontSize,
                 lineHeight: '1.75',
                 color: '#E8E8ED',
                 marginTop: i === 0 ? '16px' : '12px',
+                transition: 'font-size 0.2s ease',
               }}
             >
               {para}

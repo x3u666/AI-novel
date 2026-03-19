@@ -22,7 +22,18 @@ export function ChatMessage({
   onTypingComplete,
 }: ChatMessageProps) {
   const typingSpeed = useSettingsStore((state) => state.typingSpeed);
+  const gameFont = useSettingsStore((state) => state.gameFont);
   const messageRef = useRef<HTMLDivElement>(null);
+
+  // Font family map
+  const fontFamilyMap: Record<string, string> = {
+    inter:    '"Inter", sans-serif',
+    bookerly: '"Bookerly", "Georgia", serif',
+    literata: '"Literata", "Georgia", serif',
+    garamond: '"Garamond", "EB Garamond", serif',
+    georgia:  '"Georgia", serif',
+  };
+  const fontFamily = fontFamilyMap[gameFont ?? 'inter'] ?? '"Inter", sans-serif';
 
   // Typewriter effect for narrator messages
   const { displayText, isTyping, skipToEnd } = useTypewriter({
@@ -83,7 +94,7 @@ export function ChatMessage({
               border: `1px solid ${preset.accentColor}30`,
             }}
           >
-            <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+            <p className="whitespace-pre-wrap leading-relaxed" style={{ fontFamily }}>{message.content}</p>
           </div>
           <div className="flex justify-end mt-1">
             <span className="text-xs text-white/30">
@@ -137,7 +148,7 @@ export function ChatMessage({
             borderLeft: `2px solid ${preset.accentColor}40`,
           }}
         >
-          <p className="whitespace-pre-wrap leading-relaxed text-white/90 font-serif">
+          <p className="whitespace-pre-wrap leading-relaxed text-white/90" style={{ fontFamily }}>
             {useTypewriterEffect && isTyping ? displayText : message.content}
           </p>
           {isTyping && (

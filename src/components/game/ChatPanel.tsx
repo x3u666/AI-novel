@@ -11,6 +11,7 @@ import { AutoPlayButton } from './AutoPlayButton';
 import { MessageSquare } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { GAME_FONT_FAMILIES } from '@/types/ui';
 
 interface ChatPanelProps {
   messages: ChatMessageType[];
@@ -26,129 +27,86 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({
-  messages,
-  preset,
-  choices,
-  isTyping,
-  onSendMessage,
-  onChoose,
-  isDisabled = false,
-  isFinished = false,
-  useTypewriter = true,
-  onTypingComplete,
+  messages, preset, choices, isTyping, onSendMessage, onChoose,
+  isDisabled = false, isFinished = false, useTypewriter = true, onTypingComplete,
 }: ChatPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const autoPlayActive = useUIStore((state) => state.autoPlayActive);
-  const toggleAutoPlay = useUIStore((state) => state.toggleAutoPlay);
-  const autoPlaySpeed = useSettingsStore((state) => state.autoPlaySpeed);
-  
-  // Track if typewriter is currently animating
+  const autoPlayActive = useUIStore((s) => s.autoPlayActive);
+  const toggleAutoPlay = useUIStore((s) => s.toggleAutoPlay);
+  const autoPlaySpeed = useSettingsStore((s) => s.autoPlaySpeed);
+  const gameFont = useSettingsStore((s) => s.gameFont);
+  const fontFamily = GAME_FONT_FAMILIES[gameFont ?? 'inter'];
   const [isTypewriterActive, setIsTypewriterActive] = useState(false);
 
-  // Scroll to bottom function
   const scrollToBottom = useCallback(() => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current)
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-    }
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => { scrollToBottom(); }, [messages.length, isTyping, scrollToBottom]);
   useEffect(() => {
-    scrollToBottom();
-  }, [messages.length, isTyping, scrollToBottom]);
-
-  // Auto-scroll when typing indicator changes
-  useEffect(() => {
-    const timer = setTimeout(scrollToBottom, 100);
-    return () => clearTimeout(timer);
+    const t = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(t);
   }, [isTyping, scrollToBottom]);
 
-  // Reset typewriter state when messages change
   useEffect(() => {
     if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === 'narrator' && useTypewriter) {
-        const timer = setTimeout(() => {
-          setIsTypewriterActive(true);
-        }, 0);
-        return () => clearTimeout(timer);
+      const last = messages[messages.length - 1];
+      if (last.role === 'narrator' && useTypewriter) {
+        const t = setTimeout(() => setIsTypewriterActive(true), 0);
+        return () => clearTimeout(t);
       }
     }
   }, [messages.length, useTypewriter]);
 
-  // Handle typewriter complete
   const handleTypewriterComplete = useCallback(() => {
     setIsTypewriterActive(false);
     onTypingComplete?.();
   }, [onTypingComplete]);
 
   const hasMessages = messages.length > 0;
-  
-  // Show choices only when:
-  // 1. There are choices available
-  // 2. Server is not typing (isTyping is false)
-  // 3. Typewriter animation is complete (isTypewriterActive is false)
   const showChoices = choices.length > 0 && !isTyping && !isTypewriterActive;
 
   return (
-    <div className="h-full flex flex-col bg-transparent">
-      {/* Header */}
+    <div className="h-full flex flex-col bg-transparent" style={{ fontFamily }}>
+      {/* Header — UI font */}
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-white/50" />
-          <span className="text-sm font-medium text-white/70">Чат с рассказчиком</span>
+          <span className="text-sm font-medium text-white/70" style={{ fontFamily: '"Inter", sans-serif' }}>
+            Чат с рассказчиком
+          </span>
         </div>
-        <AutoPlayButton
-          isActive={autoPlayActive}
-          onToggle={toggleAutoPlay}
-          disabled={isDisabled || isTyping}
-          autoPlaySpeed={autoPlaySpeed}
-        />
+        <AutoPlayButton isActive={autoPlayActive} onToggle={toggleAutoPlay}
+          disabled={isDisabled || isTyping} autoPlaySpeed={autoPlaySpeed} />
       </div>
 
-      {/* Messages Area - scrollable */}
-      <div 
-        ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden"
-        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}
-      >
+      {/* Messages */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
         <div className="p-6 space-y-4">
           {hasMessages ? (
             <>
               {messages.map((message, index) => {
-                const isLastMessage = index === messages.length - 1;
-                const isLastNarratorMessage = isLastMessage && message.role === 'narrator';
-
+                const isLast = index === messages.length - 1;
+                const isLastNarrator = isLast && message.role === 'narrator';
                 return (
-                  <ChatMessage
-                    key={message.id}
-                    message={message}
-                    preset={preset}
-                    useTypewriterEffect={useTypewriter && isLastNarratorMessage}
-                    onTypingComplete={isLastNarratorMessage ? handleTypewriterComplete : undefined}
-                  />
+                  <ChatMessage key={message.id} message={message} preset={preset}
+                    useTypewriterEffect={useTypewriter && isLastNarrator}
+                    onTypingComplete={isLastNarrator ? handleTypewriterComplete : undefined} />
                 );
               })}
-
-              {/* Typing indicator */}
               <TypingIndicator preset={preset} isVisible={isTyping} />
-              
-              {/* Scroll anchor */}
               <div ref={messagesEndRef} className="h-1" />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-                style={{ backgroundColor: `${preset.accentColor}15` }}
-              >
-                <MessageSquare
-                  className="w-8 h-8"
-                  style={{ color: preset.accentColor }}
-                />
+              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                style={{ backgroundColor: `${preset.accentColor}15` }}>
+                <MessageSquare className="w-8 h-8" style={{ color: preset.accentColor }} />
               </div>
-              <p className="text-white/30 text-xs">
+              <p className="text-white/30 text-xs" style={{ fontFamily: '"Inter", sans-serif' }}>
                 История начнётся совсем скоро...
               </p>
             </div>
@@ -156,33 +114,22 @@ export function ChatPanel({
         </div>
       </div>
 
-      {/* Choice buttons (if available) */}
-      {showChoices && (
-        <div className="flex-shrink-0 px-6 py-4 border-t border-white/5 h-[330px] overflow-y-auto">
-          <ChoiceButtons
-            choices={choices}
-            onChoose={onChoose}
-            disabled={isDisabled}
-            accentColor={preset.accentColor}
-          />
-        </div>
-      )}
-
-      {/* User Input or Finished Banner */}
-      {!showChoices && (
-        isFinished
-          ? <FinishedGameBanner accentColor={preset.accentColor} />
-          : (
-            <div className="flex-shrink-0">
-              <UserInput
-                onSend={onSendMessage}
-                disabled={isDisabled || isTyping || isTypewriterActive}
-                minLength={10}
-                maxLength={500}
-                placeholder="Опишите ваше действие или ответ..."
-              />
+      {/* Bottom: choices + input */}
+      {!isFinished ? (
+        <div className="flex-shrink-0 border-t border-white/5">
+          {showChoices && (
+            <div className="px-6 pt-3 pb-0">
+              <ChoiceButtons choices={choices} onChoose={onChoose}
+                disabled={isDisabled} accentColor={preset.accentColor} />
             </div>
-          )
+          )}
+          <UserInput onSend={onSendMessage}
+            disabled={isDisabled || isTyping || isTypewriterActive}
+            minLength={3} maxLength={500}
+            placeholder="Напишите своё действие или ответ..." />
+        </div>
+      ) : (
+        <FinishedGameBanner accentColor={preset.accentColor} />
       )}
     </div>
   );

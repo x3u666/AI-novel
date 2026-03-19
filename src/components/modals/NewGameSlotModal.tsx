@@ -68,12 +68,21 @@ export function NewGameSlotModal({
   const handleConfirmOverwrite = () => {
     if (pendingSlot !== null) {
       deleteSlot(pendingSlot);
+      deleteSlot(0); // clear auto-save so Continue won't load deleted save
       onSlotSelected(pendingSlot);
       onOpenChange(false);
     }
   };
 
   const handleCancelOverwrite = () => {
+    setPendingSlot(null);
+  };
+
+  const handleDeleteSlot = (e: React.MouseEvent, slotIndex: number) => {
+    e.stopPropagation();
+    deleteSlot(slotIndex);
+    deleteSlot(0); // clear auto-save so Continue won't load deleted save
+    setTimeout(() => setSlots(getUserSlots()), 0);
     setPendingSlot(null);
   };
 
@@ -167,6 +176,17 @@ export function NewGameSlotModal({
                           </p>
                         )}
                       </div>
+                    )}
+
+                    {/* Delete button — only for occupied slots */}
+                    {!isEmpty && !isPending && (
+                      <button
+                        onClick={(e) => handleDeleteSlot(e, slotIndex)}
+                        className="flex-shrink-0 p-1.5 rounded-lg text-white/25 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                        title="Удалить сохранение"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     )}
                   </div>
 
