@@ -24,11 +24,14 @@ interface ChatPanelProps {
   isFinished?: boolean;
   useTypewriter?: boolean;
   onTypingComplete?: () => void;
+  // True while the narrative panel is streaming — chat is dimmed and locked
+  isNarrativeStreaming?: boolean;
 }
 
 export function ChatPanel({
   messages, preset, choices, isTyping, onSendMessage, onChoose,
   isDisabled = false, isFinished = false, useTypewriter = true, onTypingComplete,
+  isNarrativeStreaming = false,
 }: ChatPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -69,7 +72,18 @@ export function ChatPanel({
   const showChoices = choices.length > 0 && !isTyping && !isTypewriterActive;
 
   return (
-    <div className="h-full flex flex-col bg-transparent" style={{ fontFamily }}>
+    <div className="h-full flex flex-col bg-transparent relative" style={{ fontFamily }}>
+      {/* Dim overlay while narrative panel is streaming */}
+      {isNarrativeStreaming && (
+        <div
+          className="absolute inset-0 z-20 pointer-events-none"
+          style={{
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(1px)',
+            transition: 'opacity 0.3s ease',
+          }}
+        />
+      )}
       {/* Header — UI font */}
       <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-2">

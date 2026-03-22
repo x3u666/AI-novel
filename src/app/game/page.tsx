@@ -29,8 +29,7 @@ import { saveSlot } from '@/services/saveService';
 import { getPresetById, presets } from '@/data/presets';
 import {
   getInitialNarrative,
-  processChoice,
-  processUserInput,
+  streamNarrative,
   isEndingScene,
   getEndingInfo,
 } from '@/services/narrativeService';
@@ -136,9 +135,15 @@ export default function GamePage() {
   const [showEndingOverlay, setShowEndingOverlay] = useState(false);
   const [showMusicPlayer, setShowMusicPlayer] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  // Streaming state: text accumulating in the narrative panel before chat appears
+  const [streamingNarrativeText, setStreamingNarrativeText] = useState<string>('');
+  // 'idle' | 'streaming-narrative' | 'typewriting-narrative' | 'showing-chat'
+  const [narrativePhase, setNarrativePhase] = useState<'idle' | 'streaming-narrative' | 'typewriting-narrative' | 'showing-chat'>('idle');
 
   // Ref to track previous chapter for auto-save
   const prevChapterRef = useRef(currentChapter);
+  // Holds the parsed LLM response while narrative typewriter is running
+  const pendingResponseRef = useRef<import('@/services/narrativeService').NarrativeResponse | null>(null);
 
   // Get narrator preset
   const preset = selectedNarrator
@@ -211,162 +216,124 @@ export default function GamePage() {
     }
   };
 
-  // Handle user message
-  const handleSendMessage = useCallback(async (text: string) => {
-    if (isTyping || isLoading) return;
-
-    // Add user message to chat
-    const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
-      role: 'user',
-      content: text,
-    };
-    addChatMessage(userMessage);
-
-    setTyping(true);
-    setLoading(true, 'Обдумываю ответ...');
+  // ── Shared post-stream logic ────────────────────────────────────────────────
+  const handleStreamResponse = useCallback(async (
+    mode: 'input' | 'choice',
+    userInputOrChoiceId: string,
+  ) => {
+    setNarrativePhase('streaming-narrative');
+    setStreamingNarrativeText('');
+    // Clear loading overlay as soon as streaming begins
+    setLoading(false);
 
     try {
-      // For intro scene, use processUserInput, otherwise use generateNarrative
-      const response = currentSceneId === 'scene_intro'
-        ? await processUserInput(text, useGameStore.getState())
-        : await processChoice(currentSceneId, '', useGameStore.getState());
+      const response = await streamNarrative(
+        userInputOrChoiceId,
+        useGameStore.getState(),
+        mode,
+        (chunk) => {
+          setStreamingNarrativeText((prev) => prev + chunk);
+        },
+      );
 
-      // Small delay before showing response
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Add narrator response
-      const narratorMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
-        role: 'narrator',
-        content: response.narratorMessage,
-      };
-      addChatMessage(narratorMessage);
-
-      // Add narrative block
+      // Stream finished — commit the narrative block to the store
+      // (typewriter will re-animate from the stored block)
       const narrativeBlock: Omit<NarrativeBlock, 'id' | 'timestamp'> = {
         content: response.narrativeBlock,
         type: 'narration',
       };
       addNarrativeBlock(narrativeBlock);
+      setStreamingNarrativeText('');
+      // Streaming done — hide loading overlay now, typewriter takes over
+      setLoading(false);
+      setNarrativePhase('typewriting-narrative');
+      pendingResponseRef.current = response;
 
-      // Set available choices - preserve original IDs for scene navigation
-      if (response.choices.length > 0) {
-        setAvailableChoices(response.choices.map(c => ({
-          id: c.id,
-          text: c.text,
-          consequence: c.consequence,
-          disabled: c.disabled,
-        })));
-      } else {
-        clearChoices();
-      }
-
-      setCurrentSceneId(response.nextSceneId);
-
-      // Check for ending
-      if (isEndingScene(response.nextSceneId)) {
-        const endingInfo = getEndingInfo(response.nextSceneId);
-        if (endingInfo) {
-          setEnding(endingInfo.type);
-          // Save with isFinished=true to both auto-slot and user slot, then navigate
-          setTimeout(() => {
-            const s = useGameStore.getState();
-            try { saveSlot(0, s); } catch (e) { console.error(e); }
-            if (s.selectedSlotIndex) {
-              try { saveSlot(s.selectedSlotIndex, s); } catch (e) { console.error(e); }
-            }
-            router.push('/ending');
-          }, 2000);
-        }
-      }
     } catch (error) {
-      console.error('Failed to process message:', error);
-    } finally {
+      console.error('Failed to stream narrative:', error);
+      // On error reset everything so the player can try again
+      setNarrativePhase('idle');
       setTyping(false);
       setLoading(false);
     }
-  }, [isTyping, isLoading, currentSceneId, addChatMessage, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, router]);
+    // Note: setTyping/setLoading/setNarrativePhase → 'idle' are called
+    // in handleNarrativeTypingComplete once the typewriter finishes.
+  }, [addNarrativeBlock, setTyping, setLoading, router]);
+
+  // Handle user message
+  const handleSendMessage = useCallback(async (text: string) => {
+    if (isTyping || isLoading || narrativePhase !== 'idle') return;
+
+    const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = { role: 'user', content: text };
+    addChatMessage(userMessage);
+
+    setTyping(true);
+    setLoading(true, 'Пишу историю...');
+    await handleStreamResponse('input', text);
+  }, [isTyping, isLoading, addChatMessage, setTyping, setLoading, handleStreamResponse]);
 
   // Handle choice selection
   const handleChoose = useCallback(async (choice: Choice) => {
-    console.log('[DEBUG] handleChoose called with:', { choiceId: choice.id, choiceText: choice.text, currentSceneId });
-    if (isTyping || isLoading) return;
+    if (isTyping || isLoading || narrativePhase !== 'idle') return;
 
-    // Add user's choice as a message
-    const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
-      role: 'user',
-      content: choice.text,
-    };
+    const userMessage: Omit<ChatMessage, 'id' | 'timestamp'> = { role: 'user', content: choice.text };
     addChatMessage(userMessage);
-
-    // Mark choice as selected
     makeChoice(choice.id);
 
     setTyping(true);
-    setLoading(true, 'Обдумываю последствия...');
+    setLoading(true, 'Пишу историю...');
+    await handleStreamResponse('choice', choice.id);
+  }, [isTyping, isLoading, addChatMessage, makeChoice, setTyping, setLoading, handleStreamResponse]);
 
-    try {
-      const response = await processChoice(currentSceneId, choice.id, useGameStore.getState());
-      console.log('[DEBUG] processChoice response:', { nextSceneId: response.nextSceneId, isEnding: response.isEnding, endingType: response.endingType });
+  // Called when NarrativeBlock typewriter finishes — now reveal chat
+  const handleNarrativeTypingComplete = useCallback(() => {
+    const response = pendingResponseRef.current;
+    if (!response) return;
+    pendingResponseRef.current = null;
 
-      // Small delay before showing response
-      await new Promise(resolve => setTimeout(resolve, 500));
+    setNarrativePhase('showing-chat');
+    setLoading(false);
 
-      // Add narrator response
-      const narratorMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
-        role: 'narrator',
-        content: response.narratorMessage,
-      };
-      addChatMessage(narratorMessage);
+    const narratorMessage: Omit<ChatMessage, 'id' | 'timestamp'> = {
+      role: 'narrator',
+      content: response.narratorMessage,
+    };
+    addChatMessage(narratorMessage);
 
-      // Add narrative block
-      const narrativeBlock: Omit<NarrativeBlock, 'id' | 'timestamp'> = {
-        content: response.narrativeBlock,
-        type: 'narration',
-      };
-      addNarrativeBlock(narrativeBlock);
-
-      // Set available choices - preserve original IDs for scene navigation
-      if (response.choices.length > 0) {
-        setAvailableChoices(response.choices.map(c => ({
-          id: c.id,
-          text: c.text,
-          consequence: c.consequence,
-          disabled: c.disabled,
-        })));
-      } else {
-        clearChoices();
-      }
-
-      setCurrentSceneId(response.nextSceneId);
-
-      // Check for ending
-      if (isEndingScene(response.nextSceneId)) {
-        const endingInfo = getEndingInfo(response.nextSceneId);
-        if (endingInfo) {
-          setEnding(endingInfo.type);
-          // Save with isFinished=true to both auto-slot and user slot, then navigate
-          setTimeout(() => {
-            const s = useGameStore.getState();
-            try { saveSlot(0, s); } catch (e) { console.error(e); }
-            if (s.selectedSlotIndex) {
-              try { saveSlot(s.selectedSlotIndex, s); } catch (e) { console.error(e); }
-            }
-            router.push('/ending');
-          }, 2000);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to process choice:', error);
-    } finally {
-      setTyping(false);
-      setLoading(false);
+    if (response.choices.length > 0) {
+      setAvailableChoices(response.choices.map(ch => ({
+        id: ch.id,
+        text: ch.text,
+        consequence: ch.consequence,
+        disabled: ch.disabled,
+      })));
+    } else {
+      clearChoices();
     }
-  }, [isTyping, isLoading, currentSceneId, addChatMessage, makeChoice, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, router]);
 
-  // Handle typing complete (for auto-play)
-  const handleTypingComplete = useCallback(() => {
-    // Could trigger auto-play logic here
-  }, []);
+    setCurrentSceneId(response.nextSceneId);
+    setTyping(false);
+    setLoading(false);
+    setNarrativePhase('idle');
+
+    if (isEndingScene(response.nextSceneId)) {
+      const endingInfo = getEndingInfo(response.nextSceneId);
+      if (endingInfo) {
+        setEnding(endingInfo.type);
+        setTimeout(() => {
+          const s = useGameStore.getState();
+          try { saveSlot(0, s); } catch (e) { console.error(e); }
+          if (s.selectedSlotIndex) {
+            try { saveSlot(s.selectedSlotIndex, s); } catch (e) { console.error(e); }
+          }
+          router.push('/ending');
+        }, 2000);
+      }
+    }
+  }, [addChatMessage, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, router]);
+
+  // Chat typewriter complete (for auto-play, kept for future use)
+  const handleTypingComplete = useCallback(() => {}, []);
 
   // Handle home button
   const handleHome = () => {
@@ -542,6 +509,10 @@ export default function GamePage() {
             decisions={decisions}
             currentChapter={currentChapter}
             accentColor={preset.accentColor}
+            streamingText={streamingNarrativeText}
+            isStreaming={narrativePhase === 'streaming-narrative'}
+            isTypewriting={narrativePhase === 'typewriting-narrative'}
+            onNarrativeTypingComplete={handleNarrativeTypingComplete}
           />
         </div>
 
@@ -554,10 +525,11 @@ export default function GamePage() {
             isTyping={isTyping}
             onSendMessage={handleSendMessage}
             onChoose={handleChoose}
-            isDisabled={isLoading || isFinished}
+            isDisabled={isFinished || narrativePhase === 'streaming-narrative' || narrativePhase === 'typewriting-narrative'}
             isFinished={isFinished}
             useTypewriter={true}
             onTypingComplete={handleTypingComplete}
+            isNarrativeStreaming={narrativePhase === 'streaming-narrative' || narrativePhase === 'typewriting-narrative'}
           />
         </div>
       </main>
