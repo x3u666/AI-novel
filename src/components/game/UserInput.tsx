@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { TEXT_SIZE_CONFIG } from '@/types/ui';
 
 interface UserInputProps {
   onSend: (text: string) => void;
@@ -23,6 +25,14 @@ export function UserInput({
   const [text, setText] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textSize = useSettingsStore((s) => s.textSize);
+  const fontSizeMap: Record<string, string> = {
+    small: '0.875rem',   // text-sm
+    medium: '1rem',      // text-base
+    large: '1.125rem',   // text-lg
+    xlarge: '1.25rem',   // text-xl
+  };
+  const inputFontSize = fontSizeMap[textSize ?? 'medium'];
 
   // Auto-resize textarea
   const adjustHeight = useCallback(() => {
@@ -102,6 +112,7 @@ export function UserInput({
             focus-visible:ring-0 focus-visible:ring-offset-0
             scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10
           `}
+          style={{ fontSize: inputFontSize, lineHeight: '1.5' }}
           rows={1}
         />
 

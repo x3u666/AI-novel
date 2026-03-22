@@ -447,14 +447,16 @@ export default function SelectNarratorPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
+  // Controls the black fade-overlay opacity during background transitions
+  const [bgFading, setBgFading] = useState(false);
 
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const { startNewGame, selectedSlotIndex } = useGameStore();
   const selectedPreset = presets.find(p => p.id === selectedId) || null;
   const accentColor = selectedPreset?.accentColor ?? '#A8B0BC';
 
-  // Debounce background change by 500ms for smooth transition feel
   const bgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSelect = useCallback((id: PresetId) => {
     if (id === selectedId) return;
@@ -462,8 +464,15 @@ export default function SelectNarratorPage() {
     const ni = presets.findIndex(p => p.id === id);
     setSlideDirection(ni > ci ? 'left' : 'right');
     setSelectedId(id);
+
+    // Fade out → swap bg → fade in
     if (bgTimer.current) clearTimeout(bgTimer.current);
-    bgTimer.current = setTimeout(() => setBgId(id), 500);
+    if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    setBgFading(true);                            // start fade-out (250ms)
+    bgTimer.current = setTimeout(() => {
+      setBgId(id);                                // swap at peak darkness
+      fadeTimer.current = setTimeout(() => setBgFading(false), 50); // then fade-in
+    }, 250);
   }, [selectedId]);
 
   const handleContinue = () => {
@@ -484,6 +493,16 @@ export default function SelectNarratorPage() {
 
       {/* Background — memoized, won't cause page re-render on unrelated state changes */}
       <AmbientBackground selectedId={bgId} />
+
+      {/* Crossfade overlay — fades to black between background swaps */}
+      <div
+        className="absolute inset-0 pointer-events-none z-10"
+        style={{
+          backgroundColor: '#000',
+          opacity: bgFading ? 0.45 : 0,
+          transition: bgFading ? 'opacity 0.25s ease-in' : 'opacity 0.4s ease-out',
+        }}
+      />
 
       {/* Toolbar */}
       <motion.div

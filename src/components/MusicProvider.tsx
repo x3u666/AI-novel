@@ -74,6 +74,11 @@ export function MusicProvider() {
       audioRef.current = audio;
 
       audio.play().then(() => {
+        // If volume is 0, set immediately and skip fade-in
+        if (targetVolume === 0) {
+          audio.volume = 0;
+          return;
+        }
         fadeIntervalRef.current = setInterval(() => {
           if (!audioRef.current) return;
           const next = Math.min(audioRef.current.volume + FADE_STEP, targetVolume);
@@ -82,7 +87,10 @@ export function MusicProvider() {
         }, FADE_INTERVAL_MS);
       }).catch(() => {
         const resume = () => {
-          audio.play().catch(() => {});
+          // Only resume if volume is not zero
+          if (audioRef.current && targetVolume > 0) {
+            audio.play().catch(() => {});
+          }
           document.removeEventListener('click', resume);
         };
         document.addEventListener('click', resume, { once: true });

@@ -1,15 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL   = 'llama-3.3-70b-versatile';
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const TIMEOUT_MS         = 30_000;
+
+/**
+ * Fallback chain — only large, reliable models that handle Russian and
+ * follow complex XML prompts. Ordered by response speed.
+ *
+ * 1. meta-llama/llama-3.3-70b-instruct:free  — primary, best Russian support
+ * 2. mistralai/mistral-small-3.1-24b-instruct:free — fast, reliable fallback
+ * 3. nvidia/nemotron-3-super-120b-a12b:free  — strong quality, different provider
+ * 4. openrouter/free                          — OR auto-router, last resort
+ */
+/**
+ * Provider map (March 2026):
+ *   NVIDIA  → nvidia/nemotron-3-super-120b-a12b
+ *   Alibaba → qwen/qwen3-next-80b-a3b-instruct
+ *   Venice  → meta-llama/llama-3.3-70b-instruct, mistralai/mistral-small-3.1-24b
+ *   OR auto → openrouter/free
+ *
+ * Non-Venice providers come first so a Venice rate-limit doesn't block
+ * the first two slots simultaneously.
+ */
+const MODELS = [
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'mistralai/mistral-small-3.1-24b-instruct:free',
+  'openrouter/free',
+] as const;
+
+type CallResult = { content: string; model: string } | { error: string; status: number };
+
+async function callModel(
+  apiKey: string,
+  model: string,
+  systemPrompt: string,
+  messages: { role: string; content: string }[],
+): Promise<CallResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(OPENROUTER_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://gennarrative.app',
+        'X-Title': 'GenNarrative',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1200,
+        temperature: 0.85,
+        messages: [{ role: 'system', content: systemPrompt }, ...messages],
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { error: `Timed out after ${TIMEOUT_MS / 1000}s`, status: 504 };
+    }
+    return { error: `Network error: ${String(err)}`, status: 502 };
+  }
+
+  clearTimeout(timer);
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    return { error: `${response.status}: ${text}`, status: response.status };
+  }
+
+  const data = await response.json();
+  const content: string = data.choices?.[0]?.message?.content ?? '';
+  if (!content) {
+    return { error: 'Empty content in response', status: 503 };
+  }
+  return { content, model };
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'GROQ_API_KEY is not set in environment variables' },
-        { status: 500 }
+        { error: 'OPENROUTER_API_KEY is not set' },
+        { status: 500 },
       );
     }
 
@@ -21,71 +100,41 @@ export async function POST(req: NextRequest) {
     }
 
     const { systemPrompt, messages } = body;
-
     if (!systemPrompt || !Array.isArray(messages)) {
       return NextResponse.json(
         { error: 'Missing required fields: systemPrompt, messages' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    let groqResponse: Response;
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
-      groqResponse = await fetch(GROQ_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: GROQ_MODEL,
-          max_tokens: 1200,
-          temperature: 0.85,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages,
-          ],
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-    } catch (networkErr) {
-      console.error('[Groq] Network error:', networkErr);
-      return NextResponse.json(
-        { error: `Network error reaching Groq: ${String(networkErr)}` },
-        { status: 502 }
-      );
+    let lastError = '';
+    for (const model of MODELS) {
+      const result = await callModel(apiKey, model, systemPrompt, messages);
+
+      if ('content' in result) {
+        return NextResponse.json({ content: result.content });
+      }
+
+      const retryable = result.status === 402 || result.status === 429 || result.status >= 500;
+      lastError = `[${model}] ${result.error}`;
+      console.warn(`[OpenRouter] ${lastError}${retryable ? ' — trying next model' : ''}`);
+
+      if (!retryable) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
     }
 
-    if (!groqResponse.ok) {
-      const errorText = await groqResponse.text();
-      console.error('[Groq API error]', groqResponse.status, errorText);
-      return NextResponse.json(
-        { error: `Groq API error ${groqResponse.status}: ${errorText}` },
-        { status: groqResponse.status }
-      );
-    }
-
-    const data = await groqResponse.json();
-    const content: string = data.choices?.[0]?.message?.content ?? '';
-
-    if (!content) {
-      console.error('[Groq] Empty content in response:', JSON.stringify(data));
-      return NextResponse.json(
-        { error: 'Groq returned empty content' },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ content });
+    console.error('[OpenRouter] All models failed:', lastError);
+    return NextResponse.json(
+      { error: `All models unavailable. Last: ${lastError}` },
+      { status: 503 },
+    );
 
   } catch (err) {
-    console.error('[Groq] Unhandled error:', err);
+    console.error('[narrative/route] Unhandled error:', err);
     return NextResponse.json(
       { error: `Internal server error: ${String(err)}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

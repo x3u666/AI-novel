@@ -21,7 +21,7 @@ export interface NarrativeResponse {
   endingType?: 'good' | 'neutral' | 'bad';
 }
 
-async function callGroq(
+async function callLLM(
   systemPrompt: string,
   messages: { role: string; content: string }[],
   retries = 2
@@ -37,15 +37,14 @@ async function callGroq(
       return (data.content as string) ?? '';
     }
     const err = await response.text();
-    console.error(`[callGroq] attempt ${attempt}/${retries} — status:`, response.status, 'body:', err);
-    // Retry on network errors (502) but not on auth/client errors
-    if (response.status !== 502 || attempt === retries) {
-      throw new Error(`Groq API error ${response.status}: ${err}`);
+    console.error(`[LLM] attempt ${attempt}/${retries} — status:`, response.status, 'body:', err);
+    const retryable = response.status === 402 || response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === retries) {
+      throw new Error(`LLM error ${response.status}: ${err}`);
     }
-    // Wait 1s before retry
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, attempt * 1000));
   }
-  throw new Error('Groq: all retries exhausted');
+  throw new Error('LLM: all retries exhausted');
 }
 
 function extractTag(text: string, tag: string): string | null {
@@ -142,14 +141,43 @@ function buildResponse(parsed: ParsedResponse, turnCount: number): NarrativeResp
   };
 }
 
+/**
+ * Builds a trimmed chat history (last 13 turns) for the messages array.
+ * Keeping it short prevents context dilution while still giving the model
+ * enough recent conversation to follow the flow.
+ */
 function buildChatHistory(gameState: GameState): { role: string; content: string }[] {
   return gameState.chatHistory
     .filter((m) => m.content.trim().length > 0)
-    .slice(-20)
+    .slice(-13)
     .map((m) => ({
       role: m.role === 'narrator' ? 'assistant' : 'user',
       content: m.content,
     }));
+}
+
+/**
+ * When the player picks a choice we inject an explicit user message so the
+ * model cannot miss what action was taken, even if it's mid-history.
+ */
+function buildChoiceMessages(
+  choiceId: string,
+  gameState: GameState,
+): { role: string; content: string }[] {
+  const choice = gameState.availableChoices.find((c) => c.id === choiceId);
+  const history = buildChatHistory(gameState);
+
+  if (!choice) return history;
+
+  // Replace or append the last user message with the explicit choice text
+  const explicitChoice = {
+    role: 'user',
+    content: `Мой выбор: "${choice.text}"${choice.consequence ? ` (возможное последствие: ${choice.consequence})` : ''}`,
+  };
+
+  // Drop the last user message if it's already about a choice to avoid duplication
+  const filtered = history.filter((_, i) => i < history.length - 1 || history[history.length - 1]?.role !== 'user');
+  return [...filtered, explicitChoice];
 }
 
 export async function getInitialNarrative(): Promise<NarrativeResponse> {
@@ -173,20 +201,21 @@ export async function processUserInput(
   if (!preset) throw new Error(`Preset not found: ${gameState.selectedNarrator}`);
   const turnCount = gameState.chatHistory.filter((m) => m.role === 'narrator').length + 1;
   const systemPrompt = buildSystemPrompt(preset, gameState);
-  const raw = await callGroq(systemPrompt, [{ role: 'user', content: userInput }]);
+  const raw = await callLLM(systemPrompt, [{ role: 'user', content: userInput }]);
   return buildResponse(parseLLMResponse(raw, turnCount), turnCount);
 }
 
 export async function processChoice(
   _currentSceneId: string,
-  _choiceId: string,
+  choiceId: string,
   gameState: GameState
 ): Promise<NarrativeResponse> {
   const preset = getPresetById(gameState.selectedNarrator);
   if (!preset) throw new Error(`Preset not found: ${gameState.selectedNarrator}`);
   const turnCount = gameState.chatHistory.filter((m) => m.role === 'narrator').length + 1;
   const systemPrompt = buildSystemPrompt(preset, gameState);
-  const raw = await callGroq(systemPrompt, buildChatHistory(gameState));
+  const messages = buildChoiceMessages(choiceId, gameState);
+  const raw = await callLLM(systemPrompt, messages);
   return buildResponse(parseLLMResponse(raw, turnCount), turnCount);
 }
 

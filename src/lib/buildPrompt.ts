@@ -17,19 +17,25 @@ export function buildSystemPrompt(
   let stageInstruction: string;
   if (progress < 0.25) {
     stageInstruction = 'НАЧАЛО: Устанавливай мир и атмосферу, знакомь с персонажами, создавай интригу. Не торопись.';
-  } else if (progress < 0.55) {
+  } else if (progress < 0.52) {
     stageInstruction = 'РАЗВИТИЕ: Наращивай конфликт, углубляй персонажей, усиливай ставки.';
-  } else if (progress < 0.80) {
-    stageInstruction = 'КУЛЬМИНАЦИЯ: Подводи к пику напряжения. Намекай, что развязка уже близко.';
+  } else if (progress < 0.72) {
+    const remaining = MAX_TURNS - turnCount;
+    stageInstruction =
+      `КУЛЬМИНАЦИЯ (осталось ~${remaining} ходов): Нарастай к пику. ` +
+      'Начинай плавно сводить нити сюжета. Выборы должны ощущаться судьбоносными. ' +
+      'Концовка уже близко — не вводи новых персонажей или линий.';
   } else {
     const remaining = MAX_TURNS - turnCount;
     stageInstruction =
       `РАЗВЯЗКА — осталось ~${remaining} ход(а). ` +
-      'История ОБЯЗАНА завершиться. Веди к одной из трёх концовок. ' +
+      'История ОБЯЗАНА завершиться естественно и органично. ' +
+      'Напиши полноценный финал: подведи итог пути героя, закрой все открытые нити, ' +
+      'создай ощущение завершённости — как последняя страница книги. ' +
       'ОБЯЗАТЕЛЬНО верни блок <ENDING> вместо <CHOICES>.';
   }
 
-  const isFinalPhase = progress >= 0.80;
+  const isFinalPhase = progress >= 0.72;
 
   const decisionSummary =
     gameState.decisions.length > 0
