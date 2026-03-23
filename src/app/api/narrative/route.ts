@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const TIMEOUT_MS         = 30_000;
+// Gemini OpenAI-compatible endpoint
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const TIMEOUT_MS     = 30_000;
 
 /**
- * Provider map (March 2026):
- *   NVIDIA  → nvidia/nemotron-3-super-120b-a12b
- *   Alibaba → qwen/qwen3-next-80b-a3b-instruct
- *   Venice  → meta-llama/llama-3.3-70b-instruct, mistralai/mistral-small-3.1-24b
- *   OR auto → openrouter/free
+ * Free Gemini models (March 2026), ordered by capability:
+ *
+ * 1. gemini-2.5-flash      — основная: 10 RPM, 250 RPD, лучшее качество
+ * 2. gemini-2.5-flash-lite — фолбэк:   15 RPM, 1000 RPD, быстрее и больше лимит
+ *
+ * Оба используют OpenAI-compatible endpoint Google,
+ * поэтому формат запроса идентичен предыдущему.
  */
 const MODELS = [
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'mistralai/mistral-small-3.1-24b-instruct:free',
-  'openrouter/free',
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
 ] as const;
 
 type CallResult = { content: string } | { error: string; status: number };
-
-// ─── Non-streaming fallback (used internally to try next model) ───────────────
 
 async function callModel(
   apiKey: string,
@@ -34,13 +32,11 @@ async function callModel(
 
   let response: Response;
   try {
-    response = await fetch(OPENROUTER_API_URL, {
+    response = await fetch(GEMINI_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://gennarrative.app',
-        'X-Title': 'GenNarrative',
       },
       body: JSON.stringify({
         model,
@@ -66,7 +62,6 @@ async function callModel(
     return { error: `${response.status}: ${text}`, status: response.status };
   }
 
-  // If streaming requested, return the raw Response for the caller to pipe
   if (stream) return response;
 
   const data = await response.json();
@@ -75,13 +70,11 @@ async function callModel(
   return { content };
 }
 
-// ─── Route handler ────────────────────────────────────────────────────────────
-
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'OPENROUTER_API_KEY is not set' }, { status: 500 });
+      return NextResponse.json({ error: 'GEMINI_API_KEY is not set' }, { status: 500 });
     }
 
     let body: { systemPrompt: string; messages: { role: string; content: string }[] };
@@ -96,18 +89,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: systemPrompt, messages' }, { status: 400 });
     }
 
-    // ── Try each model; first that succeeds streams back SSE ─────────────────
     let lastError = '';
 
     for (let i = 0; i < MODELS.length; i++) {
       const model = MODELS[i];
       const isLast = i === MODELS.length - 1;
 
-      // Last model gets streaming; earlier ones are tested non-streaming first
-      // so we can quickly skip rate-limited ones without opening a stream
-      const result = await callModel(apiKey, model, systemPrompt, messages, isLast ? true : false);
+      const result = await callModel(apiKey, model, systemPrompt, messages, isLast);
 
-      // Raw Response means streaming succeeded — pipe it through
+      // Raw Response — streaming succeeded, pipe through
       if (result instanceof Response) {
         return new Response(result.body, {
           headers: {
@@ -118,11 +108,11 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // CallResult with content means non-streaming success — wrap as SSE
+      // Non-streaming success — wrap as SSE
       if ('content' in result) {
-        // Emit the full content as a single SSE event so the client
-        // can use the same parsing logic regardless
-        const sseBody = `data: ${JSON.stringify({ choices: [{ delta: { content: result.content }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`;
+        const sseBody = `data: ${JSON.stringify({
+          choices: [{ delta: { content: result.content }, finish_reason: 'stop' }],
+        })}\n\ndata: [DONE]\n\n`;
         return new Response(sseBody, {
           headers: {
             'Content-Type': 'text/event-stream',
@@ -132,21 +122,20 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Error — decide whether to retry
-      const retryable = result.status === 402 || result.status === 429 || result.status >= 500;
+      const retryable = result.status === 429 || result.status >= 500;
       lastError = `[${model}] ${result.error}`;
-      console.warn(`[OpenRouter] ${lastError}${retryable ? ' — trying next model' : ''}`);
+      console.warn(`[Gemini] ${lastError}${retryable ? ' — trying next model' : ''}`);
 
       if (!retryable) {
         return NextResponse.json({ error: result.error }, { status: result.status });
       }
-
-      // On the second-to-last model, switch to streaming for the last attempt
-      // (already handled above by isLast check)
     }
 
-    console.error('[OpenRouter] All models failed:', lastError);
-    return NextResponse.json({ error: `All models unavailable. Last: ${lastError}` }, { status: 503 });
+    console.error('[Gemini] All models failed:', lastError);
+    return NextResponse.json(
+      { error: `All models unavailable. Last: ${lastError}` },
+      { status: 503 },
+    );
 
   } catch (err) {
     console.error('[narrative/route] Unhandled error:', err);
