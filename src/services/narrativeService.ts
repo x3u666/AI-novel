@@ -43,7 +43,7 @@ async function streamFromAPI(
 
     if (!response.ok || !response.body) {
       const err = await response.text().catch(() => '');
-      console.error(`[Gemini] attempt ${attempt}/${retries} — status:`, response.status, err);
+      console.error(`[Groq] attempt ${attempt}/${retries} — status:`, response.status, err);
       const retryable = response.status === 402 || response.status === 429 || response.status >= 500;
       if (!retryable || attempt === retries) throw new Error(`LLM error ${response.status}: ${err}`);
       await new Promise(r => setTimeout(r, attempt * 1000));
