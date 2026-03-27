@@ -21,18 +21,12 @@ export interface NarrativeResponse {
   endingType?: 'good' | 'neutral' | 'bad';
 }
 
-// ─── SSE streaming ────────────────────────────────────────────────────────────
+// ─── API call ─────────────────────────────────────────────────────────────────
 
-/**
- * Calls /api/narrative and streams the response token-by-token.
- * Calls onToken(chunk) as each piece of text arrives.
- * Returns the full accumulated text when the stream ends.
- */
-async function streamFromAPI(
+async function callLLM(
   systemPrompt: string,
   messages: { role: string; content: string }[],
-  onToken: (chunk: string) => void,
-  retries = 2,
+  retries = 2
 ): Promise<string> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     const response = await fetch('/api/narrative', {
@@ -40,51 +34,19 @@ async function streamFromAPI(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ systemPrompt, messages }),
     });
-
-    if (!response.ok || !response.body) {
-      const err = await response.text().catch(() => '');
-      console.error(`[Groq] attempt ${attempt}/${retries} — status:`, response.status, err);
-      const retryable = response.status === 402 || response.status === 429 || response.status >= 500;
-      if (!retryable || attempt === retries) throw new Error(`LLM error ${response.status}: ${err}`);
-      await new Promise(r => setTimeout(r, attempt * 1000));
-      continue;
+    if (response.ok) {
+      const data = await response.json();
+      return (data.content as string) ?? '';
     }
-
-    // Read SSE stream
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? ''; // keep incomplete last line
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6).trim();
-        if (data === '[DONE]') break;
-
-        try {
-          const json = JSON.parse(data);
-          const chunk: string = json.choices?.[0]?.delta?.content ?? '';
-          if (chunk) {
-            fullText += chunk;
-            onToken(chunk);
-          }
-        } catch {
-          // malformed SSE line — skip
-        }
-      }
+    const err = await response.text();
+    console.error(`[Groq] attempt ${attempt}/${retries} — status:`, response.status, 'body:', err);
+    const retryable = response.status === 429 || response.status >= 500;
+    if (!retryable || attempt === retries) {
+      throw new Error(`LLM error ${response.status}: ${err}`);
     }
-
-    return fullText;
+    await new Promise(r => setTimeout(r, attempt * 1000));
   }
-  throw new Error('LLM: all retries exhausted');
+  throw new Error('Groq: all retries exhausted');
 }
 
 // ─── XML parsing ──────────────────────────────────────────────────────────────
@@ -205,69 +167,13 @@ function buildChoiceMessages(
     role: 'user',
     content: `Мой выбор: "${choice.text}"${choice.consequence ? ` (возможное последствие: ${choice.consequence})` : ''}`,
   };
-  const filtered = history.filter((_, i) => i < history.length - 1 || history[history.length - 1]?.role !== 'user');
+  const filtered = history.filter(
+    (_, i) => i < history.length - 1 || history[history.length - 1]?.role !== 'user'
+  );
   return [...filtered, explicitChoice];
 }
 
-// ─── Streaming narrative — main export ───────────────────────────────────────
-
-/**
- * Streams the LLM response. Calls onNarrativeChunk() with each new piece
- * of the NARRATIVE section as it arrives (for typewriter in left panel).
- * Returns the full NarrativeResponse once the stream is complete.
- */
-export async function streamNarrative(
-  userInputOrChoiceId: string,
-  gameState: GameState,
-  mode: 'input' | 'choice',
-  onNarrativeChunk: (chunk: string) => void,
-): Promise<NarrativeResponse> {
-  const preset = getPresetById(gameState.selectedNarrator);
-  if (!preset) throw new Error(`Preset not found: ${gameState.selectedNarrator}`);
-
-  const turnCount = gameState.chatHistory.filter((m) => m.role === 'narrator').length + 1;
-  const systemPrompt = buildSystemPrompt(preset, gameState);
-  const messages = mode === 'input'
-    ? [{ role: 'user', content: userInputOrChoiceId }]
-    : buildChoiceMessages(userInputOrChoiceId, gameState);
-
-  // Track whether we're inside the <NARRATIVE> tag
-  let buffer = '';
-  let narrativeStarted = false;
-  let narrativeEnded = false;
-
-  const fullText = await streamFromAPI(systemPrompt, messages, (chunk) => {
-    buffer += chunk;
-
-    // Detect <NARRATIVE> open tag
-    if (!narrativeStarted && buffer.includes('<NARRATIVE>')) {
-      narrativeStarted = true;
-      const after = buffer.split('<NARRATIVE>')[1] ?? '';
-      if (after) onNarrativeChunk(after);
-      return;
-    }
-
-    if (narrativeStarted && !narrativeEnded) {
-      // Detect </NARRATIVE> close tag
-      if (buffer.includes('</NARRATIVE>')) {
-        narrativeEnded = true;
-        // Emit everything before the closing tag that hasn't been emitted yet
-        const beforeClose = buffer.split('</NARRATIVE>')[0];
-        const alreadyEmitted = buffer.split('<NARRATIVE>')[1]?.split('</NARRATIVE>')[0] ?? '';
-        // Calculate what's new (the chunk itself, since we track per-chunk)
-        const newPart = chunk.split('</NARRATIVE>')[0];
-        if (newPart && !chunk.startsWith('</')) onNarrativeChunk(newPart);
-        return;
-      }
-      // Still inside NARRATIVE — emit the chunk directly
-      onNarrativeChunk(chunk);
-    }
-  });
-
-  return buildResponse(parseLLMResponse(fullText, turnCount), turnCount);
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function getInitialNarrative(): Promise<NarrativeResponse> {
   const { useGameStore } = await import('@/stores/gameStore');
@@ -280,6 +186,32 @@ export async function getInitialNarrative(): Promise<NarrativeResponse> {
     choices: [],
     nextSceneId: 'scene_intro',
   };
+}
+
+export async function processUserInput(
+  userInput: string,
+  gameState: GameState
+): Promise<NarrativeResponse> {
+  const preset = getPresetById(gameState.selectedNarrator);
+  if (!preset) throw new Error(`Preset not found: ${gameState.selectedNarrator}`);
+  const turnCount = gameState.chatHistory.filter((m) => m.role === 'narrator').length + 1;
+  const systemPrompt = buildSystemPrompt(preset, gameState);
+  const raw = await callLLM(systemPrompt, [{ role: 'user', content: userInput }]);
+  return buildResponse(parseLLMResponse(raw, turnCount), turnCount);
+}
+
+export async function processChoice(
+  _currentSceneId: string,
+  choiceId: string,
+  gameState: GameState
+): Promise<NarrativeResponse> {
+  const preset = getPresetById(gameState.selectedNarrator);
+  if (!preset) throw new Error(`Preset not found: ${gameState.selectedNarrator}`);
+  const turnCount = gameState.chatHistory.filter((m) => m.role === 'narrator').length + 1;
+  const systemPrompt = buildSystemPrompt(preset, gameState);
+  const messages = buildChoiceMessages(choiceId, gameState);
+  const raw = await callLLM(systemPrompt, messages);
+  return buildResponse(parseLLMResponse(raw, turnCount), turnCount);
 }
 
 export function isEndingScene(sceneId: string): boolean {

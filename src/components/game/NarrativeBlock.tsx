@@ -3,8 +3,6 @@
 import { motion } from 'framer-motion';
 import type { NarrativeBlock as NarrativeBlockType } from '@/types';
 import { formatTimeShort } from '@/utils/formatDate';
-import { useTypewriter } from '@/hooks/useTypewriter';
-import { useSettingsStore } from '@/stores/settingsStore';
 
 interface NarrativeBlockProps {
   block: NarrativeBlockType;
@@ -12,9 +10,6 @@ interface NarrativeBlockProps {
   chapterTitle?: string;
   isDecision?: boolean;
   accentColor?: string;
-  // When true, the block text animates with typewriter effect
-  useTypewriterEffect?: boolean;
-  onTypingComplete?: () => void;
 }
 
 export function NarrativeBlock({
@@ -23,20 +18,7 @@ export function NarrativeBlock({
   chapterTitle,
   isDecision = false,
   accentColor = '#d4af37',
-  useTypewriterEffect = false,
-  onTypingComplete,
 }: NarrativeBlockProps) {
-  const typingSpeed = useSettingsStore((s) => s.typingSpeed);
-
-  const { displayText, isTyping, skipToEnd } = useTypewriter({
-    text: block.content,
-    speed: typingSpeed,
-    onComplete: onTypingComplete,
-    enabled: useTypewriterEffect && !!block.content,
-  });
-
-  const shownText = useTypewriterEffect ? displayText : block.content;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -44,39 +26,37 @@ export function NarrativeBlock({
       transition={{ duration: 0.5, ease: 'easeOut' }}
       className={`
         relative pl-4 py-3
-        ${isDecision ? 'border-l-2' : 'border-l-0'}
-        ${useTypewriterEffect && isTyping ? 'cursor-pointer' : ''}
+        ${isDecision ? `border-l-2` : 'border-l-0'}
       `}
-      style={{ borderLeftColor: isDecision ? accentColor : 'transparent' }}
-      onClick={useTypewriterEffect && isTyping ? skipToEnd : undefined}
-      title={useTypewriterEffect && isTyping ? 'Нажмите чтобы пропустить' : undefined}
+      style={{
+        borderLeftColor: isDecision ? accentColor : 'transparent',
+      }}
     >
       {/* Chapter Title */}
       {showChapterTitle && chapterTitle && (
         <div className="mb-4">
-          <h2 className="text-xl font-semibold mb-2" style={{ color: accentColor }}>
+          <h2
+            className="text-xl font-semibold mb-2"
+            style={{ color: accentColor }}
+          >
             {chapterTitle}
           </h2>
           <div
             className="w-full h-px opacity-30"
-            style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)` }}
+            style={{
+              background: `linear-gradient(90deg, ${accentColor}, transparent)`,
+            }}
           />
         </div>
       )}
 
       {/* Content */}
       <div className="text-white/90 leading-relaxed whitespace-pre-wrap font-serif">
-        {shownText}
-        {useTypewriterEffect && isTyping && (
-          <span
-            className="inline-block w-[2px] h-[1em] ml-[2px] align-middle animate-pulse"
-            style={{ backgroundColor: accentColor }}
-          />
-        )}
+        {block.content}
       </div>
 
-      {/* Timestamp — only shown after typewriter completes */}
-      {block.timestamp && !isTyping && (
+      {/* Timestamp */}
+      {block.timestamp && (
         <div className="mt-2 text-xs text-white/30">
           {formatTimeShort(block.timestamp)}
         </div>
@@ -93,6 +73,7 @@ export function NarrativeBlock({
   );
 }
 
+// Decorative separator component
 export function NarrativeSeparator() {
   return (
     <motion.div
