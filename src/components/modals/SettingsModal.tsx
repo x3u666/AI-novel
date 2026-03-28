@@ -6,7 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { RotateCcw } from 'lucide-react';
-import { GAME_FONT_LABELS, GAME_FONT_FAMILIES } from '@/types/ui';
+import { usePathname } from 'next/navigation';
+import {
+  GAME_FONT_LABELS,
+  GAME_FONT_FAMILIES,
+  GAME_FONT_WEIGHTS,
+  GAME_FONT_LINE_HEIGHTS,
+} from '@/types/ui';
 
 interface SettingsModalProps {
   open: boolean;
@@ -20,21 +26,37 @@ const TEXT_SIZES: { value: TextSize; label: string }[] = [
   { value: 'xlarge', label: 'XL' },
 ];
 
-const FONTS: GameFont[] = ['inter', 'bookerly', 'literata', 'garamond', 'georgia'];
+const FONTS: GameFont[] = ['inter', 'source_serif', 'spectral'];
+
+// Pixel sizes for the preview text, matching the actual game font sizes
+const PREVIEW_SIZE: Record<TextSize, string> = {
+  small:  '13px',
+  medium: '15px',
+  large:  '17px',
+  xlarge: '20px',
+};
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
+  const pathname = usePathname();
+  const isGamePage = pathname === '/game';
+
   const {
-    textSize, typingSpeed, autoPlaySpeed, musicVolume, sfxVolume, gameFont,
-    setTextSize, setTypingSpeed, setAutoPlaySpeed, setMusicVolume, setSfxVolume,
+    textSize, typingSpeed, musicVolume, sfxVolume, gameFont,
+    setTextSize, setTypingSpeed, setMusicVolume, setSfxVolume,
     setGameFont, resetSettings,
   } = useSettingsStore();
 
-  const autoPlaySec = autoPlaySpeed / 1000;
-  const previewSize = textSize === 'small' ? '12px' : textSize === 'medium' ? '14px' : textSize === 'large' ? '16px' : '19px';
+  const previewSize   = PREVIEW_SIZE[textSize ?? 'large'];
+  const previewWeight = GAME_FONT_WEIGHTS[gameFont ?? 'inter'];
+  const previewLH     = GAME_FONT_LINE_HEIGHTS[gameFont ?? 'inter'];
+  const previewFamily = GAME_FONT_FAMILIES[gameFont ?? 'inter'];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px] bg-[#1a1a24] border-white/10 text-white max-h-[90vh] overflow-y-auto" showCloseButton>
+      <DialogContent
+        className="sm:max-w-[480px] bg-[#1a1a24] border-white/10 text-white max-h-[90vh] overflow-y-auto"
+        showCloseButton
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-white">Настройки</DialogTitle>
         </DialogHeader>
@@ -51,35 +73,56 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                     textSize === value
                       ? 'bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#d4af37]'
                       : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80'
-                  }`}>{label}</button>
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
             </div>
-            {/* Preview */}
-            <div className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 min-h-[48px] flex items-center">
-              <p className="text-white/70 leading-snug line-clamp-2 transition-all duration-200"
-                style={{ fontSize: previewSize, fontFamily: GAME_FONT_FAMILIES[gameFont ?? 'inter'] }}>
+            {/* Preview — реагирует на размер и шрифт */}
+            <div
+              className="rounded-lg bg-white/5 border border-white/10 px-3 py-2 flex items-center transition-all duration-200"
+              style={{ minHeight: textSize === 'xlarge' ? '68px' : textSize === 'large' ? '58px' : '48px' }}
+            >
+              <p
+                className="text-white/70 leading-snug line-clamp-3 transition-all duration-200"
+                style={{
+                  fontSize: previewSize,
+                  fontFamily: previewFamily,
+                  fontWeight: previewWeight,
+                  lineHeight: previewLH,
+                }}
+              >
                 Рассказчик произнёс слова, и мир вокруг изменился навсегда.
               </p>
             </div>
           </div>
 
-          {/* Game Font */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-white/80">Шрифт (нарратив и чат)</label>
-            <div className="grid grid-cols-3 gap-2">
-              {FONTS.map((font) => (
-                <button key={font} onClick={() => setGameFont(font)}
-                  className={`py-2 px-3 rounded-lg text-sm transition-all duration-200 truncate ${
-                    gameFont === font
-                      ? 'bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#d4af37]'
-                      : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80'
-                  }`}
-                  style={{ fontFamily: GAME_FONT_FAMILIES[font] }}>
-                  {GAME_FONT_LABELS[font]}
-                </button>
-              ))}
+          {/* Game Font — только на экране игры */}
+          {isGamePage && (
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-white/80">Шрифт</label>
+              <div className="grid grid-cols-3 gap-2">
+                {FONTS.map((font) => (
+                  <button
+                    key={font}
+                    onClick={() => setGameFont(font)}
+                    className={`py-2 px-3 rounded-lg text-sm transition-all duration-200 truncate ${
+                      gameFont === font
+                        ? 'bg-[#d4af37]/20 border border-[#d4af37]/50 text-[#d4af37]'
+                        : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80'
+                    }`}
+                    style={{
+                      fontFamily: GAME_FONT_FAMILIES[font],
+                      fontWeight: GAME_FONT_WEIGHTS[font],
+                    }}
+                  >
+                    {GAME_FONT_LABELS[font]}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Typing Speed */}
           <div className="space-y-3">
@@ -89,16 +132,6 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </div>
             <Slider value={[typingSpeed]} min={20} max={100} step={5}
               onValueChange={([v]) => setTypingSpeed(v)} className="w-full" />
-          </div>
-
-          {/* Auto-play Speed */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <label className="text-sm font-medium text-white/80">Скорость автопроигрывания</label>
-              <span className="text-sm text-white/50">{autoPlaySec.toFixed(1)} сек</span>
-            </div>
-            <Slider value={[autoPlaySec]} min={1} max={5} step={0.5}
-              onValueChange={([v]) => setAutoPlaySpeed(v * 1000)} className="w-full" />
           </div>
 
           {/* Music Volume */}

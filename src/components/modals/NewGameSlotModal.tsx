@@ -41,6 +41,7 @@ export function NewGameSlotModal({
 }: NewGameSlotModalProps) {
   const [slots, setSlots] = useState<(SaveSlot | null)[]>([null, null, null]);
   const [pendingSlot, setPendingSlot] = useState<number | null>(null);
+  const [pendingDeleteSlot, setPendingDeleteSlot] = useState<number | null>(null);
 
   // Load slots 1-3 when modal opens
   useEffect(() => {
@@ -80,10 +81,21 @@ export function NewGameSlotModal({
 
   const handleDeleteSlot = (e: React.MouseEvent, slotIndex: number) => {
     e.stopPropagation();
-    deleteSlot(slotIndex);
-    deleteSlot(0); // clear auto-save so Continue won't load deleted save
-    setTimeout(() => setSlots(getUserSlots()), 0);
-    setPendingSlot(null);
+    setPendingDeleteSlot(slotIndex);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteSlot !== null) {
+      deleteSlot(pendingDeleteSlot);
+      deleteSlot(0);
+      setTimeout(() => setSlots(getUserSlots()), 0);
+      setPendingDeleteSlot(null);
+      setPendingSlot(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setPendingDeleteSlot(null);
   };
 
   return (
@@ -238,6 +250,32 @@ export function NewGameSlotModal({
           Выберите пустой слот или перезапишите существующий
         </p>
       </DialogContent>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={pendingDeleteSlot !== null} onOpenChange={(open) => { if (!open) handleCancelDelete(); }}>
+        <DialogContent className="sm:max-w-[360px] bg-[#1a1a24] border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+              Удалить сохранение?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-white/60 mt-2">
+            Сохранение в слоте {pendingDeleteSlot} будет удалено безвозвратно.
+          </p>
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" onClick={handleCancelDelete}
+              className="flex-1 bg-transparent border-white/10 text-white/60 hover:bg-white/5 hover:text-white">
+              Отмена
+            </Button>
+            <Button onClick={handleConfirmDelete}
+              className="flex-1 bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20">
+              <Trash2 className="w-4 h-4 mr-1" />
+              Удалить
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

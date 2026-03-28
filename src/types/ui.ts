@@ -1,7 +1,7 @@
 export type TextSize = 'small' | 'medium' | 'large' | 'xlarge';
 export type Theme = 'dark' | 'light';
 export type Language = 'ru' | 'en';
-export type GameFont = 'inter' | 'bookerly' | 'literata' | 'garamond' | 'georgia';
+export type GameFont = 'inter' | 'source_serif' | 'spectral';
 
 export interface SettingsConfig {
   textSize: TextSize;
@@ -15,7 +15,7 @@ export interface SettingsConfig {
 }
 
 export const DEFAULT_SETTINGS: SettingsConfig = {
-  textSize: 'medium',
+  textSize: 'large',
   typingSpeed: 50,
   autoPlaySpeed: 3000,
   musicVolume: 5,
@@ -43,19 +43,34 @@ export const TEXT_SIZE_CONFIG: Record<TextSize, TextSizeClass> = {
   xlarge: { textSize: 'xlarge', proseClass: 'text-xl leading-relaxed',   dialogueClass: 'text-xl',   choiceClass: 'text-xl'   },
 };
 
-// Font families for game panels only (narrative + chat)
 export const GAME_FONT_FAMILIES: Record<GameFont, string> = {
-  inter:    '"Inter", sans-serif',
-  bookerly: '"Bookerly", "Georgia", serif',
-  literata: '"Literata", "Georgia", serif',
-  garamond: '"Garamond", "EB Garamond", serif',
-  georgia:  '"Georgia", serif',
+  inter:       '"Inter", sans-serif',
+  source_serif: '"Source Serif 4", "Georgia", serif',
+  spectral:    '"Spectral", "Georgia", serif',
 };
 
 export const GAME_FONT_LABELS: Record<GameFont, string> = {
-  inter:    'Inter',
-  bookerly: 'Bookerly',
-  literata: 'Literata',
-  garamond: 'Garamond',
-  georgia:  'Georgia',
+  inter:       'Inter',
+  source_serif: 'Source Serif 4',
+  spectral:    'Spectral',
+};
+
+// Font weights per typeface
+export const GAME_FONT_WEIGHTS: Record<GameFont, number> = {
+  inter:       250,
+  source_serif: 350,
+  spectral:    300,
+};
+
+// Line heights per typeface
+export const GAME_FONT_LINE_HEIGHTS: Record<GameFont, number> = {
+  inter:       1.5,
+  source_serif: 1.5,
+  spectral:    1.75,
+};
+
+export const GAME_FONT_LABELS_SHORT: Record<GameFont, string> = {
+  inter:       'Inter',
+  source_serif: 'Source Serif',
+  spectral:    'Spectral',
 };

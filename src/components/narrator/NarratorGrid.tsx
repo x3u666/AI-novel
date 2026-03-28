@@ -12,10 +12,11 @@ interface NarratorGridProps {
 }
 
 function getCardStep(): number {
-  if (typeof window === 'undefined') return 186;
-  if (window.innerWidth >= 768) return 186; // 170px card + 16px gap
-  if (window.innerWidth >= 640) return 171; // 155px card + 16px gap
-  return 146;                               // 130px card + 16px gap
+  if (typeof window === 'undefined') return 210;
+  if (window.innerWidth >= 1024) return 210; // 190px card + 20px gap
+  if (window.innerWidth >= 768) return 190;  // 170px card + 20px gap
+  if (window.innerWidth >= 640) return 170;  // 150px card + 20px gap
+  return 150;
 }
 
 function debounce<T extends (...args: unknown[]) => void>(fn: T, ms: number): T {
@@ -89,7 +90,7 @@ export function NarratorGrid({ presets, selectedId, onSelect }: NarratorGridProp
   const translateX = -offset * cardStep;
 
   // +3px so the checkmark on the rightmost card isn't clipped
-  const containerWidth = 6 * cardStep - 16 + 3;
+  const containerWidth = Math.min(6 * cardStep - 20 + 4, typeof window !== 'undefined' ? window.innerWidth - 120 : 1140);
 
   return (
     <div className="flex flex-col items-center w-full max-w-[1100px] mx-auto select-none">
@@ -129,7 +130,7 @@ export function NarratorGrid({ presets, selectedId, onSelect }: NarratorGridProp
           }}
         >
           <div
-            className="flex gap-4 py-2"
+            className="flex gap-5 py-3"
             style={{
               transform: `translateX(${translateX}px)`,
               transition: 'transform 0.32s cubic-bezier(0.25, 0.4, 0.25, 1)',

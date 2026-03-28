@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter, Cormorant_Garamond } from "next/font/google";
+import { Playfair_Display, Inter, Cormorant_Garamond, Source_Serif_4, Spectral } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -22,6 +22,20 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin", "cyrillic"],
   weight: ["600"],
+  display: "swap",
+});
+
+const sourceSerif4 = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin", "cyrillic"],
+  weight: ["300"],
+  display: "swap",
+});
+
+const spectral = Spectral({
+  variable: "--font-spectral",
+  subsets: ["latin", "cyrillic"],
+  weight: ["200", "300"],
   display: "swap",
 });
 
@@ -48,7 +62,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body
-        className={`${playfair.variable} ${inter.variable} ${cormorant.variable} font-sans antialiased`}
+        className={`${playfair.variable} ${inter.variable} ${cormorant.variable} ${sourceSerif4.variable} ${spectral.variable} font-sans antialiased`}
       >
         <ThemeProvider
           attribute="class"

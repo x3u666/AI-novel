@@ -120,6 +120,7 @@ export default function GamePage() {
     makeChoice,
     clearChoices,
     setEnding,
+    updateChapter,
   } = useGameStore();
 
   // UI state
@@ -139,6 +140,16 @@ export default function GamePage() {
 
   // Ref to track previous chapter for auto-save
   const prevChapterRef = useRef(currentChapter);
+
+  // Auto-update chapter every 3 narrator turns
+  useEffect(() => {
+    if (!isGameStarted || isFinished) return;
+    const narratorCount = chatHistory.filter((m) => m.role === 'narrator').length;
+    const newChapter = Math.floor(narratorCount / 3) + 1;
+    if (newChapter !== currentChapter) {
+      updateChapter(newChapter);
+    }
+  }, [chatHistory, isGameStarted, isFinished, currentChapter, updateChapter]);
 
   // Get narrator preset
   const preset = selectedNarrator

@@ -14,7 +14,6 @@ const presetEmojis: Record<PresetId, string> = {
   dark_mage: '🔮',
   detective: '🔍',
   horror: '👁️',
-  poet: '🍃',
   comedian: '🎭',
 };
 

@@ -31,6 +31,17 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'visual-novel-settings',
+      onRehydrateStorage: () => (state) => {
+        // Migrate old font values to new ones
+        const validFonts = ['inter', 'source_serif', 'spectral'];
+        if (state && !validFonts.includes(state.gameFont)) {
+          state.gameFont = 'inter';
+        }
+        // Migrate old default textSize
+        if (state && !state.textSize) {
+          state.textSize = 'large';
+        }
+      },
       partialize: (state) => ({
         textSize:      state.textSize,
         typingSpeed:   state.typingSpeed,

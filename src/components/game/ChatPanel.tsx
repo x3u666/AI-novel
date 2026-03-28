@@ -7,11 +7,10 @@ import { TypingIndicator } from './TypingIndicator';
 import { ChoiceButtons } from './ChoiceButtons';
 import { UserInput } from './UserInput';
 import { FinishedGameBanner } from './FinishedGameBanner';
-import { AutoPlayButton } from './AutoPlayButton';
 import { MessageSquare } from 'lucide-react';
 import { useUIStore } from '@/stores/uiStore';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { GAME_FONT_FAMILIES } from '@/types/ui';
+import { GAME_FONT_FAMILIES, GAME_FONT_WEIGHTS, GAME_FONT_LINE_HEIGHTS } from '@/types/ui';
 
 interface ChatPanelProps {
   messages: ChatMessageType[];
@@ -32,11 +31,12 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const autoPlayActive = useUIStore((s) => s.autoPlayActive);
-  const toggleAutoPlay = useUIStore((s) => s.toggleAutoPlay);
-  const autoPlaySpeed = useSettingsStore((s) => s.autoPlaySpeed);
   const gameFont = useSettingsStore((s) => s.gameFont);
+  const textSize = useSettingsStore((s) => s.textSize);
+  const headerFontSize = textSize === 'small' ? '12px' : textSize === 'medium' ? '14px' : textSize === 'large' ? '16px' : '18px';
   const fontFamily = GAME_FONT_FAMILIES[gameFont ?? 'inter'];
+  const fontWeight = GAME_FONT_WEIGHTS[gameFont ?? 'inter'];
+  const lineHeight = GAME_FONT_LINE_HEIGHTS[gameFont ?? 'inter'];
   const [isTypewriterActive, setIsTypewriterActive] = useState(false);
 
   const scrollToBottom = useCallback(() => {
@@ -69,17 +69,13 @@ export function ChatPanel({
   const showChoices = choices.length > 0 && !isTyping && !isTypewriterActive;
 
   return (
-    <div className="h-full flex flex-col bg-transparent" style={{ fontFamily }}>
+    <div className="h-full flex flex-col bg-transparent" style={{ fontFamily, fontWeight, lineHeight }}>
       {/* Header — UI font */}
-      <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-white/50" />
-          <span className="text-sm font-medium text-white/70" style={{ fontFamily: '"Inter", sans-serif' }}>
-            Чат с рассказчиком
-          </span>
-        </div>
-        <AutoPlayButton isActive={autoPlayActive} onToggle={toggleAutoPlay}
-          disabled={isDisabled || isTyping} autoPlaySpeed={autoPlaySpeed} />
+      <div className="flex-shrink-0 flex items-center gap-2 px-6 py-4 border-b border-white/5">
+        <MessageSquare className="w-4 h-4 text-white/50" style={{ flexShrink: 0 }} />
+        <span className="font-medium text-white/70" style={{ fontFamily: '"Inter", sans-serif', fontSize: headerFontSize }}>
+          Чат с рассказчиком
+        </span>
       </div>
 
       {/* Messages */}

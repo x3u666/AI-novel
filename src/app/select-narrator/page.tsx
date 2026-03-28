@@ -447,7 +447,6 @@ export default function SelectNarratorPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isContinuing, setIsContinuing] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('left');
-  // Controls the black fade-overlay opacity during background transitions
   const [bgFading, setBgFading] = useState(false);
 
   const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -455,7 +454,9 @@ export default function SelectNarratorPage() {
   const selectedPreset = presets.find(p => p.id === selectedId) || null;
   const accentColor = selectedPreset?.accentColor ?? '#A8B0BC';
 
+  // Debounce background change by 500ms for smooth transition feel
   const bgTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSelect = useCallback((id: PresetId) => {
@@ -465,14 +466,14 @@ export default function SelectNarratorPage() {
     setSlideDirection(ni > ci ? 'left' : 'right');
     setSelectedId(id);
 
-    // Fade out → swap bg → fade in
+    // Crossfade: fade to black → swap bg → fade back
     if (bgTimer.current) clearTimeout(bgTimer.current);
     if (fadeTimer.current) clearTimeout(fadeTimer.current);
-    setBgFading(true);                            // start fade-out (250ms)
+    setBgFading(true);
     bgTimer.current = setTimeout(() => {
-      setBgId(id);                                // swap at peak darkness
-      fadeTimer.current = setTimeout(() => setBgFading(false), 50); // then fade-in
-    }, 250);
+      setBgId(id);
+      fadeTimer.current = setTimeout(() => setBgFading(false), 80);
+    }, 260);
   }, [selectedId]);
 
   const handleContinue = () => {
@@ -494,13 +495,13 @@ export default function SelectNarratorPage() {
       {/* Background — memoized, won't cause page re-render on unrelated state changes */}
       <AmbientBackground selectedId={bgId} />
 
-      {/* Crossfade overlay — fades to black between background swaps */}
+      {/* Crossfade overlay */}
       <div
         className="absolute inset-0 pointer-events-none z-10"
         style={{
           backgroundColor: '#000',
-          opacity: bgFading ? 0.45 : 0,
-          transition: bgFading ? 'opacity 0.25s ease-in' : 'opacity 0.4s ease-out',
+          opacity: bgFading ? 0.5 : 0,
+          transition: bgFading ? 'opacity 0.26s ease-in' : 'opacity 0.45s ease-out',
         }}
       />
 

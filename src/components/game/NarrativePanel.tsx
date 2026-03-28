@@ -6,7 +6,7 @@ import type { NarrativeBlock as NarrativeBlockType, Decision } from '@/types';
 import { NarrativeBlock, NarrativeSeparator } from './NarrativeBlock';
 import { BookOpen } from 'lucide-react';
 import { useSettingsStore } from '@/stores/settingsStore';
-import { GAME_FONT_FAMILIES } from '@/types/ui';
+import { GAME_FONT_FAMILIES, GAME_FONT_WEIGHTS, GAME_FONT_LINE_HEIGHTS } from '@/types/ui';
 
 interface NarrativePanelProps {
   blocks: NarrativeBlockType[];
@@ -20,7 +20,11 @@ export function NarrativePanel({
 }: NarrativePanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gameFont = useSettingsStore((s) => s.gameFont);
+  const textSize = useSettingsStore((s) => s.textSize);
+  const headerFontSize = textSize === 'small' ? '12px' : textSize === 'medium' ? '14px' : textSize === 'large' ? '16px' : '18px';
   const fontFamily = GAME_FONT_FAMILIES[gameFont ?? 'inter'];
+  const fontWeight = GAME_FONT_WEIGHTS[gameFont ?? 'inter'];
+  const lineHeight = GAME_FONT_LINE_HEIGHTS[gameFont ?? 'inter'];
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -43,11 +47,11 @@ export function NarrativePanel({
   const hasContent = blocks.length > 0;
 
   return (
-    <div className="h-full flex flex-col bg-transparent border-r border-white/5" style={{ fontFamily }}>
+    <div className="h-full flex flex-col bg-transparent border-r border-white/5" style={{ fontFamily, fontWeight, lineHeight }}>
       {/* Header — no custom font, use inherited */}
       <div className="flex-shrink-0 flex items-center gap-2 px-6 py-4 border-b border-white/5">
         <BookOpen className="w-4 h-4 text-white/50" />
-        <span className="text-sm font-medium text-white/70" style={{ fontFamily: '"Inter", sans-serif' }}>Нарратив</span>
+        <span className="font-medium text-white/70" style={{ fontFamily: '"Inter", sans-serif', fontSize: headerFontSize }}>Нарратив</span>
       </div>
 
       <div

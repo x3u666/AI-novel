@@ -76,6 +76,11 @@ function AnimatedCounter({
 export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenProps) {
   const { totalPlayTime, decisions, characters, sessionStartTime, updatePlayTime, narrativeBlocks } = useGameStore();
   const typingSpeed = useSettingsStore((state) => state.typingSpeed);
+  const textSize = useSettingsStore((state) => state.textSize);
+  const fontSizeMap: Record<string, string> = {
+    small: '14px', medium: '16px', large: '18px', xlarge: '20px',
+  };
+  const baseFontSize = fontSizeMap[textSize ?? 'large'];
   
   const ending = getEnding(endingId);
   const styles = ENDING_STYLES[endingId];
@@ -329,7 +334,8 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
                 }}
               >
                 <p 
-                  className="font-playfair text-base md:text-lg leading-relaxed whitespace-pre-wrap"
+                  className="font-playfair leading-relaxed whitespace-pre-wrap"
+                  style={{ fontSize: baseFontSize }}
                   style={{ color: '#E8E8ED' }}
                 >
                   {displayText}
@@ -418,7 +424,7 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
               className="max-w-[520px] mx-auto mt-7 pl-5"
               style={{ borderLeft: `3px solid ${styles.textColor}40` }}
             >
-              <p className="font-playfair italic text-base opacity-80" style={{ color: '#E8E8ED' }}>
+              <p className="font-playfair italic opacity-80" style={{ color: '#E8E8ED', fontSize: baseFontSize }}>
                 {endingId === 'good' 
                   ? 'Каждый подвиг начинается с одного шага, сделанного вопреки страху. Ты сделал этот шаг — и мир стал светлее.'
                   : endingId === 'neutral'

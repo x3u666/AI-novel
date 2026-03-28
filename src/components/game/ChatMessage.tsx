@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import type { ChatMessage as ChatMessageType, NarratorPreset } from '@/types';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { GAME_FONT_FAMILIES } from '@/types/ui';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatTimestamp } from '@/utils/formatTime';
 
@@ -25,15 +26,7 @@ export function ChatMessage({
   const gameFont = useSettingsStore((state) => state.gameFont);
   const messageRef = useRef<HTMLDivElement>(null);
 
-  // Font family map
-  const fontFamilyMap: Record<string, string> = {
-    inter:    '"Inter", sans-serif',
-    bookerly: '"Bookerly", "Georgia", serif',
-    literata: '"Literata", "Georgia", serif',
-    garamond: '"Garamond", "EB Garamond", serif',
-    georgia:  '"Georgia", serif',
-  };
-  const fontFamily = fontFamilyMap[gameFont ?? 'inter'] ?? '"Inter", sans-serif';
+  const fontFamily = GAME_FONT_FAMILIES[gameFont ?? 'inter'] ?? GAME_FONT_FAMILIES['inter'];
 
   // Typewriter effect for narrator messages
   const { displayText, isTyping, skipToEnd } = useTypewriter({
