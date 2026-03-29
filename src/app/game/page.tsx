@@ -141,14 +141,12 @@ export default function GamePage() {
   // Ref to track previous chapter for auto-save
   const prevChapterRef = useRef(currentChapter);
 
-  // Auto-update chapter every 3 narrator turns
+  // Chapter advances every 3 narrator turns
   useEffect(() => {
     if (!isGameStarted || isFinished) return;
-    const narratorCount = chatHistory.filter((m) => m.role === 'narrator').length;
-    const newChapter = Math.floor(narratorCount / 3) + 1;
-    if (newChapter !== currentChapter) {
-      updateChapter(newChapter);
-    }
+    const narratorTurns = chatHistory.filter((m) => m.role === 'narrator').length;
+    const newChapter = Math.max(1, Math.floor((narratorTurns - 1) / 3) + 1);
+    if (newChapter !== currentChapter) updateChapter(newChapter);
   }, [chatHistory, isGameStarted, isFinished, currentChapter, updateChapter]);
 
   // Get narrator preset
@@ -252,10 +250,11 @@ export default function GamePage() {
       };
       addChatMessage(narratorMessage);
 
-      // Add narrative block
+      // Add narrative block with current chapter snapshot
       const narrativeBlock: Omit<NarrativeBlock, 'id' | 'timestamp'> = {
         content: response.narrativeBlock,
         type: 'narration',
+        chapter: useGameStore.getState().currentChapter,
       };
       addNarrativeBlock(narrativeBlock);
 
@@ -278,7 +277,6 @@ export default function GamePage() {
         const endingInfo = getEndingInfo(response.nextSceneId);
         if (endingInfo) {
           setEnding(endingInfo.type);
-          // Save with isFinished=true to both auto-slot and user slot, then navigate
           setTimeout(() => {
             const s = useGameStore.getState();
             try { saveSlot(0, s); } catch (e) { console.error(e); }
@@ -329,14 +327,15 @@ export default function GamePage() {
       };
       addChatMessage(narratorMessage);
 
-      // Add narrative block
+      // Add narrative block with current chapter snapshot
       const narrativeBlock: Omit<NarrativeBlock, 'id' | 'timestamp'> = {
         content: response.narrativeBlock,
         type: 'narration',
+        chapter: useGameStore.getState().currentChapter,
       };
       addNarrativeBlock(narrativeBlock);
 
-      // Set available choices - preserve original IDs for scene navigation
+      // Set available choices
       if (response.choices.length > 0) {
         setAvailableChoices(response.choices.map(c => ({
           id: c.id,
@@ -350,12 +349,10 @@ export default function GamePage() {
 
       setCurrentSceneId(response.nextSceneId);
 
-      // Check for ending
       if (isEndingScene(response.nextSceneId)) {
         const endingInfo = getEndingInfo(response.nextSceneId);
         if (endingInfo) {
           setEnding(endingInfo.type);
-          // Save with isFinished=true to both auto-slot and user slot, then navigate
           setTimeout(() => {
             const s = useGameStore.getState();
             try { saveSlot(0, s); } catch (e) { console.error(e); }

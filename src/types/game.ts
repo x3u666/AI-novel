@@ -9,6 +9,7 @@ export interface NarrativeBlock {
   type: 'narration' | 'dialogue' | 'description' | 'action';
   characterId?: string;
   isTyping?: boolean;
+  chapter?: number; // chapter number at the time this block was added
 }
 
 export interface ChatMessage {

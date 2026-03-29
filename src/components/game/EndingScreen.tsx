@@ -7,6 +7,13 @@ import { useGameStore } from '@/stores/gameStore';
 import { getEnding } from '@/data/endings';
 import type { EndingType } from '@/types';
 import { formatTimeFromMs } from '@/utils/formatTime';
+
+function formatTimeMinSec(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${min}:${sec.toString().padStart(2, '0')}`;
+}
 import { useTypewriter } from '@/hooks/useTypewriter';
 import { useSettingsStore } from '@/stores/settingsStore';
 
@@ -76,14 +83,10 @@ function AnimatedCounter({
 export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenProps) {
   const { totalPlayTime, decisions, characters, sessionStartTime, updatePlayTime, narrativeBlocks } = useGameStore();
   const typingSpeed = useSettingsStore((state) => state.typingSpeed);
-  const textSize = useSettingsStore((state) => state.textSize);
-  const fontSizeMap: Record<string, string> = {
-    small: '14px', medium: '16px', large: '18px', xlarge: '20px',
-  };
-  const baseFontSize = fontSizeMap[textSize ?? 'large'];
   
   const ending = getEnding(endingId);
   const styles = ENDING_STYLES[endingId];
+  const [aiPathLabel, setAiPathLabel] = useState<string | null>(null);
   
   // Animation states
   const [showSymbol, setShowSymbol] = useState(false);
@@ -164,12 +167,35 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
   useEffect(() => {
     updatePlayTime();
   }, [updatePlayTime]);
+
+  // Generate AI path name when text completes
+  useEffect(() => {
+    if (!textComplete) return;
+    const decisionSummary = decisions.slice(-8).map(d => d.choiceText).join('; ');
+    const endingLabel = endingId === 'good' ? 'хорошая' : endingId === 'bad' ? 'плохая' : 'нейтральная';
+    fetch('/api/narrative', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemPrompt: 'Ты — генератор коротких названий. Отвечай ТОЛЬКО одной фразой, без кавычек, без лишних слов.',
+        messages: [{
+          role: 'user',
+          content: `Придумай уникальное название пути героя (2-4 слова, на русском, красиво) для игрока, который получил ${endingLabel} концовку. Его решения: ${decisionSummary || 'неизвестны'}. Например: "Путь искупления", "Дорога теней", "Тропа мудреца". Ответь только названием.`,
+        }],
+      }),
+    })
+      .then(r => r.json())
+      .then(d => { if (d.content) setAiPathLabel(d.content.trim().slice(0, 40)); })
+      .catch(() => {});
+  }, [textComplete, decisions, endingId]);
   
   // Count unlocked characters
   const unlockedCharacters = characters.filter((c) => c.isUnlocked).length;
   
-  // Get max chapter from narrative blocks
-  const maxChapter = Math.max(...narrativeBlocks.map(b => 1), 1);
+  // Get max chapter from narrative blocks (uses stored chapter field)
+  const maxChapter = narrativeBlocks.length > 0
+    ? Math.max(...narrativeBlocks.map(b => b.chapter ?? 1))
+    : 1;
   
   // Ending number
   const types: EndingType[] = ['good', 'neutral', 'bad'];
@@ -334,8 +360,7 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
                 }}
               >
                 <p 
-                  className="font-playfair leading-relaxed whitespace-pre-wrap"
-                  style={{ fontSize: baseFontSize }}
+                  className="font-playfair text-base md:text-lg leading-relaxed whitespace-pre-wrap"
                   style={{ color: '#E8E8ED' }}
                 >
                   {displayText}
@@ -384,11 +409,11 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
               className="max-w-[480px] mx-auto bg-black/30 backdrop-blur-md rounded-xl p-6 border border-white/10"
             >
               {[
-                { icon: '⏱', label: 'Время прохождения', value: formatTimeFromMs(finalPlayTime), animate: false },
+                { icon: '⏱', label: 'Время прохождения', value: formatTimeMinSec(finalPlayTime), animate: false },
                 { icon: '🔀', label: 'Принято решений', value: decisions.length, animate: true },
                 { icon: '👥', label: 'Встречено персонажей', value: unlockedCharacters, animate: true },
                 { icon: '📖', label: 'Глав пройдено', value: maxChapter, animate: true },
-                { icon: '⚖️', label: 'Ваш путь', value: styles.pathLabel, animate: false, color: styles.pathColor },
+                { icon: '⚖️', label: 'Ваш путь', value: aiPathLabel ?? styles.pathLabel, animate: false, color: styles.pathColor },
                 { icon: '🏆', label: 'Концовка', value: `${endingNumber} из 3`, animate: false },
               ].map((stat, i) => (
                 <motion.div
@@ -424,7 +449,7 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
               className="max-w-[520px] mx-auto mt-7 pl-5"
               style={{ borderLeft: `3px solid ${styles.textColor}40` }}
             >
-              <p className="font-playfair italic opacity-80" style={{ color: '#E8E8ED', fontSize: baseFontSize }}>
+              <p className="font-playfair italic text-base opacity-80" style={{ color: '#E8E8ED' }}>
                 {endingId === 'good' 
                   ? 'Каждый подвиг начинается с одного шага, сделанного вопреки страху. Ты сделал этот шаг — и мир стал светлее.'
                   : endingId === 'neutral'
