@@ -1,6 +1,5 @@
 // Narrator types
 export type { PresetId, NarratorPreset } from './narrator';
-export { NARRATOR_PRESETS } from './narrator';
 
 // Game types
 export type {
@@ -13,6 +12,8 @@ export type {
   SaveSlot,
   GameState,
   EndingType,
+  WorldState,
+  NPCMemory,
 } from './game';
 export { DEFAULT_GAME_STATE } from './game';
 

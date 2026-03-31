@@ -58,6 +58,21 @@ export interface EntityMemory {
   relationships: Record<string, string>;
 }
 
+export interface NPCMemory {
+  name: string;
+  attitude: number; // -100..+100
+  lastAction: string; // краткое описание последнего взаимодействия
+}
+
+export interface WorldState {
+  heroName: string;
+  heroGoal: string;
+  currentLocation: string;
+  keyFacts: string[]; // до 10 фактов
+  npcMemory: Record<string, NPCMemory>; // ключ — имя NPC
+  karma: number; // -100..+100
+}
+
 export interface SaveSlot {
   id: string;
   name: string;
@@ -92,6 +107,7 @@ export interface GameState {
   currentLocation: string;
   visitedLocations: string[];
   entityMemory: Record<string, EntityMemory>;
+  worldState: WorldState;
   
   // Narrator
   selectedNarrator: PresetId;
@@ -128,6 +144,14 @@ export const DEFAULT_GAME_STATE: GameState = {
   currentLocation: '',
   visitedLocations: [],
   entityMemory: {},
+  worldState: {
+    heroName: '',
+    heroGoal: '',
+    currentLocation: '',
+    keyFacts: [],
+    npcMemory: {},
+    karma: 0,
+  },
   
   selectedNarrator: 'neutral',
   

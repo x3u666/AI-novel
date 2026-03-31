@@ -10,6 +10,7 @@ import type {
   EntityMemory,
   SaveSlot,
   EndingType,
+  WorldState,
 } from '@/types';
 import { DEFAULT_GAME_STATE } from '@/types';
 import { PresetId } from '@/types';
@@ -60,6 +61,7 @@ interface GameActions {
   setCurrentLocation: (location: string) => void;
   addVisitedLocation: (location: string) => void;
   updateEntityMemory: (entityId: string, updates: Partial<EntityMemory>) => void;
+  updateWorldState: (updates: Partial<WorldState>) => void;
   
   // Narrator
   setNarrator: (narratorId: PresetId) => void;
@@ -117,6 +119,7 @@ export const useGameStore = create<GameStore>()(
       selectedSlotIndex: slot.gameState.selectedSlotIndex ?? (slotIndex > 0 ? slotIndex : null),
       sessionStartTime: Date.now(),
       totalPlayTime: slot.playTime,
+      worldState: slot.gameState.worldState || { heroName: '', heroGoal: '', currentLocation: '', keyFacts: [], npcMemory: {}, karma: 0 },
     });
   },
   
@@ -136,6 +139,7 @@ export const useGameStore = create<GameStore>()(
       preview: state.currentNarrative.slice(0, 100) || 'Начало игры',
       playTime: totalPlayTime,
       decisions: state.decisions,
+      narratorId: state.selectedNarrator,
     };
     
     set((prev) => ({
@@ -328,6 +332,12 @@ export const useGameStore = create<GameStore>()(
       };
     });
   },
+
+  updateWorldState: (updates) => {
+    set((prev) => ({
+      worldState: { ...prev.worldState, ...updates },
+    }));
+  },
   
   // Narrator actions
   setNarrator: (narratorId) => {
@@ -366,6 +376,7 @@ export const useGameStore = create<GameStore>()(
         totalPlayTime: state.totalPlayTime,
         availableChoices: state.availableChoices,
         saveSlots: state.saveSlots,
+        worldState: state.worldState,
       }),
     }
   )

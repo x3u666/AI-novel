@@ -19,6 +19,7 @@ export interface NarrativeResponse {
   chapterUpdate?: { number: number; title: string };
   isEnding?: boolean;
   endingType?: 'good' | 'neutral' | 'bad';
+  worldStateUpdate?: Partial<import('@/types/game').WorldState>;
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
@@ -67,6 +68,38 @@ interface ParsedResponse {
   choices: Choice[];
   isEnding: boolean;
   endingType?: 'good' | 'neutral' | 'bad';
+  worldStateUpdate?: Partial<import('@/types/game').WorldState>;
+}
+
+function parseStateTag(raw: string): Partial<import('@/types/game').WorldState> | undefined {
+  const stateRaw = extractTag(raw, 'STATE');
+  if (!stateRaw) return undefined;
+  try {
+    const parsed = JSON.parse(stateRaw) as {
+      heroName?: string;
+      heroGoal?: string;
+      currentLocation?: string;
+      karma?: number;
+      keyFacts?: string[];
+      npcMemory?: Record<string, { attitude: number; lastAction: string }>;
+    };
+    const update: Partial<import('@/types/game').WorldState> = {};
+    if (parsed.heroName)       update.heroName       = parsed.heroName;
+    if (parsed.heroGoal)       update.heroGoal       = parsed.heroGoal;
+    if (parsed.currentLocation) update.currentLocation = parsed.currentLocation;
+    if (typeof parsed.karma === 'number') update.karma = Math.max(-100, Math.min(100, parsed.karma));
+    if (Array.isArray(parsed.keyFacts))   update.keyFacts   = parsed.keyFacts.slice(0, 10);
+    if (parsed.npcMemory && typeof parsed.npcMemory === 'object') {
+      const npcMemory: import('@/types/game').WorldState['npcMemory'] = {};
+      for (const [name, val] of Object.entries(parsed.npcMemory)) {
+        npcMemory[name] = { name, attitude: val.attitude, lastAction: val.lastAction };
+      }
+      update.npcMemory = npcMemory;
+    }
+    return update;
+  } catch {
+    return undefined;
+  }
 }
 
 function parseLLMResponse(raw: string, fallbackTurn: number): ParsedResponse {
@@ -90,7 +123,7 @@ function parseLLMResponse(raw: string, fallbackTurn: number): ParsedResponse {
       const typeMatch = endingRaw.match(/"type"\s*:\s*"(good|neutral|bad)"/);
       if (typeMatch?.[1]) endingType = typeMatch[1] as 'good' | 'neutral' | 'bad';
     }
-    return { narrative, chatMessage, choices: [], isEnding: true, endingType };
+    return { narrative, chatMessage, choices: [], isEnding: true, endingType, worldStateUpdate: parseStateTag(raw) };
   }
 
   const choicesRaw = extractTag(raw, 'CHOICES');
@@ -121,7 +154,7 @@ function parseLLMResponse(raw: string, fallbackTurn: number): ParsedResponse {
       { id: `c2_t${fallbackTurn}`, text: 'Осмотреться', isSelected: false },
     ];
   }
-  return { narrative, chatMessage, choices, isEnding: false };
+  return { narrative, chatMessage, choices, isEnding: false, worldStateUpdate: parseStateTag(raw) };
 }
 
 function buildResponse(parsed: ParsedResponse, turnCount: number): NarrativeResponse {
@@ -134,6 +167,7 @@ function buildResponse(parsed: ParsedResponse, turnCount: number): NarrativeResp
       nextSceneId: `llm_ending_${type}`,
       isEnding: true,
       endingType: type,
+      worldStateUpdate: parsed.worldStateUpdate,
     };
   }
   return {
@@ -142,6 +176,7 @@ function buildResponse(parsed: ParsedResponse, turnCount: number): NarrativeResp
     choices: parsed.choices,
     nextSceneId: `llm_turn_${turnCount}`,
     isEnding: false,
+    worldStateUpdate: parsed.worldStateUpdate,
   };
 }
 

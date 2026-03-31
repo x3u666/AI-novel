@@ -121,6 +121,7 @@ export default function GamePage() {
     clearChoices,
     setEnding,
     updateChapter,
+    updateWorldState,
   } = useGameStore();
 
   // UI state
@@ -258,6 +259,11 @@ export default function GamePage() {
       };
       addNarrativeBlock(narrativeBlock);
 
+      // Update world state if model returned STATE tag
+      if (response.worldStateUpdate) {
+        updateWorldState(response.worldStateUpdate);
+      }
+
       // Set available choices - preserve original IDs for scene navigation
       if (response.choices.length > 0) {
         setAvailableChoices(response.choices.map(c => ({
@@ -293,7 +299,7 @@ export default function GamePage() {
       setTyping(false);
       setLoading(false);
     }
-  }, [isTyping, isLoading, currentSceneId, addChatMessage, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, router]);
+  }, [isTyping, isLoading, currentSceneId, addChatMessage, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, router]);
 
   // Handle choice selection
   const handleChoose = useCallback(async (choice: Choice) => {
@@ -335,6 +341,11 @@ export default function GamePage() {
       };
       addNarrativeBlock(narrativeBlock);
 
+      // Update world state if model returned STATE tag
+      if (response.worldStateUpdate) {
+        updateWorldState(response.worldStateUpdate);
+      }
+
       // Set available choices
       if (response.choices.length > 0) {
         setAvailableChoices(response.choices.map(c => ({
@@ -369,7 +380,7 @@ export default function GamePage() {
       setTyping(false);
       setLoading(false);
     }
-  }, [isTyping, isLoading, currentSceneId, addChatMessage, makeChoice, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, router]);
+  }, [isTyping, isLoading, currentSceneId, addChatMessage, makeChoice, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, router]);
 
   // Handle typing complete (for auto-play)
   const handleTypingComplete = useCallback(() => {

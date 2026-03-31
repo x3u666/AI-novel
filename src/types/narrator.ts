@@ -21,4 +21,5 @@ export interface NarratorPreset {
   tags: string[];
   isDefault: boolean;
   initialMessage: string;
+  systemInstructions?: string; // уникальные правила сеттинга, поведения и дефолтного мира
 }
