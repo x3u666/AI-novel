@@ -178,7 +178,7 @@ export function NewGameSlotModal({
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {formatTimeFromMs(slot.playTime * 1000)}
+                            {formatTimeFromMs(slot.playTime)}
                           </span>
                           <span>{formatDate(slot.timestamp)}</span>
                         </div>

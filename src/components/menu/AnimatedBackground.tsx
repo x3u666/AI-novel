@@ -67,12 +67,12 @@ function FlyingBook({ x, y, scale, rotation, duration, delay, opacity }: {
 }
 
 const BOOKS = [
-  { x: '6%',  y: '10%', scale: 1.7,  rotation: -12, duration: 9,  delay: 0,   opacity: 0.75 },
-  { x: '70%', y: '6%',  scale: 1.3,  rotation: 15,  duration: 11, delay: 1.5, opacity: 0.65 },
-  { x: '83%', y: '52%', scale: 1.9,  rotation: -8,  duration: 13, delay: 0.5, opacity: 0.70 },
-  { x: '12%', y: '62%', scale: 1.45, rotation: 10,  duration: 10, delay: 3,   opacity: 0.60 },
-  { x: '46%', y: '76%', scale: 1.15, rotation: -20, duration: 8,  delay: 2,   opacity: 0.55 },
-  { x: '58%', y: '28%', scale: 1.55, rotation: 5,   duration: 14, delay: 4,   opacity: 0.62 },
+  { x: '6%',  y: '10%', scale: 3.2,  rotation: -12, duration: 9,  delay: 0,   opacity: 0.75 },
+  { x: '70%', y: '6%',  scale: 2.6,  rotation: 15,  duration: 11, delay: 1.5, opacity: 0.65 },
+  { x: '83%', y: '52%', scale: 3.6,  rotation: -8,  duration: 13, delay: 0.5, opacity: 0.70 },
+  { x: '12%', y: '62%', scale: 2.8,  rotation: 10,  duration: 10, delay: 3,   opacity: 0.60 },
+  { x: '46%', y: '76%', scale: 2.3,  rotation: -20, duration: 8,  delay: 2,   opacity: 0.55 },
+  { x: '58%', y: '28%', scale: 3.0,  rotation: 5,   duration: 14, delay: 4,   opacity: 0.62 },
 ];
 
 export function AnimatedBackground() {
