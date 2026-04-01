@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { NarrativePanel } from '@/components/game/NarrativePanel';
 import { ChatPanel } from '@/components/game/ChatPanel';
-import { DiaryPanel } from '@/components/game/DiaryPanel';
+
 import { CharactersPanel } from '@/components/game/CharactersPanel';
 import { DecisionMap } from '@/components/game/DecisionMap';
 import { GameBackground } from '@/components/game/GameBackground';
@@ -54,6 +54,12 @@ import { Button } from '@/components/ui/button';
 
 import type { Character } from '@/types';
 
+// Placeholder names the model uses before knowing the real name
+const PLACEHOLDER_NAMES = new Set([
+  'неизвестный', 'неизвестная', 'незнакомец', 'незнакомка',
+  'unknown', '???', 'npc', 'персонаж',
+]);
+
 // ── Helper: apply character updates with deduplication by id OR name ─────────
 function applyCharacterUpdates(
   characterUpdates: Array<{ id: string; name: string; role: string; description: string; lastInteraction: string; isUpdate: boolean }>,
@@ -62,16 +68,27 @@ function applyCharacterUpdates(
   updateCharacter: (id: string, updates: Partial<Character>) => void,
 ) {
   characterUpdates.forEach(cu => {
+    // Skip entries with placeholder/unknown names
+    if (PLACEHOLDER_NAMES.has(cu.name.toLowerCase().trim())) return;
+
     const attitude = currentState.worldState.npcMemory[cu.name]?.attitude ?? 0;
-    // Match by id first, then fall back to name match (catches id drift)
+
+    // 1. Match by exact id
+    // 2. Match by name (case-insensitive)
+    // 3. Match by id prefix (model sometimes appends numbers: "karl" vs "karl_2")
+    // 4. Match if existing placeholder record has description containing new name
     const existing =
       currentState.characters.find(c => c.id === cu.id) ??
-      currentState.characters.find(c => c.name.toLowerCase() === cu.name.toLowerCase());
+      currentState.characters.find(c => c.name.toLowerCase() === cu.name.toLowerCase()) ??
+      currentState.characters.find(c => c.id.startsWith(cu.id.slice(0, 4)) && cu.id.length >= 4) ??
+      currentState.characters.find(c =>
+        PLACEHOLDER_NAMES.has(c.name.toLowerCase()) &&
+        c.description.toLowerCase().includes(cu.name.toLowerCase())
+      );
 
     if (existing) {
-      // Always update if we found a match — regardless of isUpdate flag
       updateCharacter(existing.id, {
-        name: cu.name || existing.name,
+        name: cu.name,
         description: cu.description || existing.description,
         traits: [cu.role, cu.lastInteraction].filter(Boolean),
         relationships: { protagonist: attitude },
@@ -161,6 +178,7 @@ export default function GamePage() {
     updateWorldState,
     addCharacter,
     updateCharacter,
+    addCustomDecision,
   } = useGameStore();
 
   // UI state
@@ -170,7 +188,7 @@ export default function GamePage() {
   // Local state
   const [currentSceneId, setCurrentSceneId] = useState<string>('scene_intro');
   const [showSettings, setShowSettings] = useState(false);
-  const [showDiary, setShowDiary] = useState(false);
+
   const [showCharacters, setShowCharacters] = useState(false);
   const [showDecisionMap, setShowDecisionMap] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -271,6 +289,11 @@ export default function GamePage() {
     };
     addChatMessage(userMessage);
 
+    // Record custom input as a decision (for non-intro scenes)
+    if (currentSceneId !== 'scene_intro') {
+      addCustomDecision(text);
+    }
+
     setTyping(true);
     setLoading(true, 'Обдумываю ответ...');
 
@@ -343,7 +366,7 @@ export default function GamePage() {
       setTyping(false);
       setLoading(false);
     }
-  }, [isTyping, isLoading, currentSceneId, addChatMessage, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, addCharacter, updateCharacter, router]);
+  }, [isTyping, isLoading, currentSceneId, addChatMessage, addCustomDecision, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, addCharacter, updateCharacter, router]);
 
   // Handle choice selection
   const handleChoose = useCallback(async (choice: Choice) => {
@@ -357,8 +380,8 @@ export default function GamePage() {
     };
     addChatMessage(userMessage);
 
-    // Mark choice as selected
-    makeChoice(choice.id);
+    // Mark choice as selected (false = not custom input)
+    makeChoice(choice.id, false);
 
     setTyping(true);
     setLoading(true, 'Обдумываю последствия...');
@@ -535,12 +558,7 @@ export default function GamePage() {
             onClick={() => setShowMusicPlayer((v) => !v)}
             active={showMusicPlayer}
           />
-          <ToolbarButton
-            icon={BookOpen}
-            label="Журнал"
-            onClick={() => setShowDiary(true)}
-            active={showDiary}
-          />
+
           <ToolbarButton
             icon={Users}
             label="Персонажи"
@@ -636,11 +654,7 @@ export default function GamePage() {
         onOpenChange={setShowSettings}
       />
 
-      {/* Diary Panel */}
-      <DiaryPanel
-        open={showDiary}
-        onClose={() => setShowDiary(false)}
-      />
+
 
       {/* Characters Panel */}
       <CharactersPanel

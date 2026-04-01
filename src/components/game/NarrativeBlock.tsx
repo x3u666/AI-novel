@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion';
 import type { NarrativeBlock as NarrativeBlockType } from '@/types';
 import { formatTimeShort } from '@/utils/formatDate';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { GAME_FONT_FAMILIES, GAME_FONT_WEIGHTS, GAME_FONT_LINE_HEIGHTS, TEXT_SIZE_CONFIG } from '@/types/ui';
 
 interface NarrativeBlockProps {
   block: NarrativeBlockType;
@@ -19,6 +21,14 @@ export function NarrativeBlock({
   isDecision = false,
   accentColor = '#d4af37',
 }: NarrativeBlockProps) {
+  const gameFont = useSettingsStore((s) => s.gameFont);
+  const textSize = useSettingsStore((s) => s.textSize);
+
+  const fontFamily = GAME_FONT_FAMILIES[gameFont ?? 'inter'];
+  const fontWeight = GAME_FONT_WEIGHTS[gameFont ?? 'inter'];
+  const lineHeight = GAME_FONT_LINE_HEIGHTS[gameFont ?? 'inter'];
+  const { proseClass } = TEXT_SIZE_CONFIG[textSize ?? 'large'];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -51,7 +61,10 @@ export function NarrativeBlock({
       )}
 
       {/* Content */}
-      <div className="text-white/90 leading-relaxed whitespace-pre-wrap font-serif">
+      <div
+        className={`text-white/90 whitespace-pre-wrap ${proseClass}`}
+        style={{ fontFamily, fontWeight, lineHeight }}
+      >
         {block.content}
       </div>
 

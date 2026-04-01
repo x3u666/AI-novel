@@ -43,9 +43,11 @@ export const metadata: Metadata = {
   title: "GenNarrative",
   description: "Интерактивная AI-новелла с умным нарратором",
   keywords: ["GenNarrative", "AI", "новелла", "история", "игра"],
-  authors: [{ name: "Z.ai Team" }],
+  authors: [{ name: "Micropen Team" }],
   icons: {
-    icon: "/logo.svg",
+    icon: [
+      { url: "/logo.png", type: "image/png", sizes: "32x32" },
+    ],
   },
   openGraph: {
     title: "GenNarrative",

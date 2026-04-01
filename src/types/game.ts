@@ -29,6 +29,12 @@ export interface Choice {
   disabled?: boolean;
 }
 
+export interface DecisionChoice {
+  id: string;
+  text: string;
+  consequence?: string;
+}
+
 export interface Decision {
   id: string;
   choiceId: string;
@@ -36,6 +42,8 @@ export interface Decision {
   chapter: number;
   timestamp: number;
   consequence?: string;
+  allChoices?: DecisionChoice[]; // all options available at this decision point
+  isCustomInput?: boolean; // true if user typed their own response
 }
 
 export interface Character {

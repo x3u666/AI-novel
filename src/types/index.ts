@@ -7,6 +7,7 @@ export type {
   ChatMessage,
   Choice,
   Decision,
+  DecisionChoice,
   Character,
   EntityMemory,
   SaveSlot,

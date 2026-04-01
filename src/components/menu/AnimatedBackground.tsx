@@ -2,6 +2,79 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
+// Flying open book SVG path data
+function FlyingBook({ x, y, scale, rotation, duration, delay, opacity }: {
+  x: string; y: string; scale: number; rotation: number;
+  duration: number; delay: number; opacity: number;
+}) {
+  return (
+    <motion.div
+      className="absolute pointer-events-none"
+      style={{ left: x, top: y, opacity }}
+      animate={{
+        y: [0, -18, 8, -12, 0],
+        x: [0, 10, -6, 8, 0],
+        rotate: [rotation, rotation + 6, rotation - 4, rotation + 3, rotation],
+      }}
+      transition={{
+        duration,
+        delay,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    >
+      <svg
+        width={64 * scale}
+        height={48 * scale}
+        viewBox="0 0 64 48"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ filter: 'drop-shadow(0 0 10px rgba(140,230,155,0.6)) drop-shadow(0 0 24px rgba(100,200,120,0.35))' }}
+      >
+        {/* Left page */}
+        <path
+          d="M32 8 Q18 4 4 10 L4 42 Q18 36 32 40 Z"
+          fill="rgba(160,230,160,0.12)"
+          stroke="rgba(180,245,180,0.55)"
+          strokeWidth="0.9"
+        />
+        {/* Right page */}
+        <path
+          d="M32 8 Q46 4 60 10 L60 42 Q46 36 32 40 Z"
+          fill="rgba(160,230,160,0.12)"
+          stroke="rgba(180,245,180,0.55)"
+          strokeWidth="0.9"
+        />
+        {/* Spine */}
+        <line x1="32" y1="8" x2="32" y2="40" stroke="rgba(210,255,210,0.75)" strokeWidth="1.2" />
+        {/* Left page lines */}
+        <line x1="10" y1="18" x2="28" y2="15" stroke="rgba(180,240,180,0.40)" strokeWidth="0.7" />
+        <line x1="10" y1="23" x2="28" y2="20" stroke="rgba(180,240,180,0.40)" strokeWidth="0.7" />
+        <line x1="10" y1="28" x2="28" y2="26" stroke="rgba(180,240,180,0.32)" strokeWidth="0.7" />
+        <line x1="10" y1="33" x2="28" y2="31" stroke="rgba(180,240,180,0.24)" strokeWidth="0.7" />
+        {/* Right page lines */}
+        <line x1="36" y1="15" x2="54" y2="18" stroke="rgba(180,240,180,0.40)" strokeWidth="0.7" />
+        <line x1="36" y1="20" x2="54" y2="23" stroke="rgba(180,240,180,0.40)" strokeWidth="0.7" />
+        <line x1="36" y1="26" x2="54" y2="28" stroke="rgba(180,240,180,0.32)" strokeWidth="0.7" />
+        <line x1="36" y1="31" x2="54" y2="33" stroke="rgba(180,240,180,0.24)" strokeWidth="0.7" />
+        {/* Page curl hint on right */}
+        <path d="M56 38 Q60 36 60 42" stroke="rgba(200,255,200,0.45)" strokeWidth="0.8" fill="none" />
+        {/* Soft inner glow on spine */}
+        <line x1="32" y1="8" x2="32" y2="40" stroke="rgba(220,255,220,0.25)" strokeWidth="3" />
+      </svg>
+    </motion.div>
+  );
+}
+
+const BOOKS = [
+  { x: '6%',  y: '10%', scale: 1.7,  rotation: -12, duration: 9,  delay: 0,   opacity: 0.75 },
+  { x: '70%', y: '6%',  scale: 1.3,  rotation: 15,  duration: 11, delay: 1.5, opacity: 0.65 },
+  { x: '83%', y: '52%', scale: 1.9,  rotation: -8,  duration: 13, delay: 0.5, opacity: 0.70 },
+  { x: '12%', y: '62%', scale: 1.45, rotation: 10,  duration: 10, delay: 3,   opacity: 0.60 },
+  { x: '46%', y: '76%', scale: 1.15, rotation: -20, duration: 8,  delay: 2,   opacity: 0.55 },
+  { x: '58%', y: '28%', scale: 1.55, rotation: 5,   duration: 14, delay: 4,   opacity: 0.62 },
+];
+
 export function AnimatedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0.5, y: 0.5 });
@@ -287,6 +360,11 @@ export function AnimatedBackground() {
           `,
         }}
       />
+
+      {/* Flying open books */}
+      {BOOKS.map((book, i) => (
+        <FlyingBook key={i} {...book} />
+      ))}
 
       {/* Fine noise grain */}
       <div

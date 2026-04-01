@@ -45,7 +45,8 @@ interface GameActions {
   
   // Choices
   setAvailableChoices: (choices: (Omit<Choice, 'id' | 'isSelected'> & { id?: string })[]) => void;
-  makeChoice: (choiceId: string) => void;
+  makeChoice: (choiceId: string, isCustomInput?: boolean) => void;
+  addCustomDecision: (text: string) => void;
   clearChoices: () => void;
   
   // Chapter management
@@ -234,7 +235,7 @@ export const useGameStore = create<GameStore>()(
     set({ availableChoices: formattedChoices });
   },
   
-  makeChoice: (choiceId) => {
+  makeChoice: (choiceId, isCustomInput) => {
     const state = get();
     const choice = state.availableChoices.find(c => c.id === choiceId);
     if (!choice) return;
@@ -246,6 +247,12 @@ export const useGameStore = create<GameStore>()(
       chapter: state.currentChapter,
       timestamp: Date.now(),
       consequence: choice.consequence,
+      allChoices: state.availableChoices.map(c => ({
+        id: c.id,
+        text: c.text,
+        consequence: c.consequence,
+      })),
+      isCustomInput: isCustomInput || false,
     };
     
     set((prev) => ({
@@ -260,6 +267,26 @@ export const useGameStore = create<GameStore>()(
   
   clearChoices: () => {
     set({ availableChoices: [] });
+  },
+
+  addCustomDecision: (text) => {
+    const state = get();
+    const decision: Decision = {
+      id: generateId(),
+      choiceId: 'custom',
+      choiceText: text,
+      chapter: state.currentChapter,
+      timestamp: Date.now(),
+      allChoices: state.availableChoices.map(c => ({
+        id: c.id,
+        text: c.text,
+        consequence: c.consequence,
+      })),
+      isCustomInput: true,
+    };
+    set((prev) => ({
+      decisions: [...prev.decisions, decision],
+    }));
   },
   
   // Chapter actions
