@@ -7,7 +7,6 @@ export { ChoiceButtons } from './ChoiceButtons';
 export { UserInput } from './UserInput';
 export { AutoPlayButton, AutoPlayProgress } from './AutoPlayButton';
 export { ChatPanel } from './ChatPanel';
-export { DiaryPanel } from './DiaryPanel';
 export { CharactersPanel } from './CharactersPanel';
 export { DecisionMap } from './DecisionMap';
 export { EndingScreen } from './EndingScreen';

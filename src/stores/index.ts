@@ -30,6 +30,5 @@ export {
   selectCurrentModal,
   selectIsTyping,
   selectAutoPlayActive,
-  selectSidebarOpen,
   selectIsLoading,
 } from './uiStore';
