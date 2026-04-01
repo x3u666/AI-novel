@@ -20,6 +20,14 @@ export interface NarrativeResponse {
   isEnding?: boolean;
   endingType?: 'good' | 'neutral' | 'bad';
   worldStateUpdate?: Partial<import('@/types/game').WorldState>;
+  characterUpdates?: Array<{
+    id: string;
+    name: string;
+    role: string;
+    description: string;
+    lastInteraction: string;
+    isUpdate: boolean;
+  }>;
 }
 
 // ─── API call ─────────────────────────────────────────────────────────────────
@@ -62,6 +70,15 @@ function extractTag(text: string, tag: string): string | null {
     .trim();
 }
 
+interface ParsedCharacterUpdate {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  lastInteraction: string;
+  isUpdate: boolean;
+}
+
 interface ParsedResponse {
   narrative: string;
   chatMessage: string;
@@ -69,6 +86,7 @@ interface ParsedResponse {
   isEnding: boolean;
   endingType?: 'good' | 'neutral' | 'bad';
   worldStateUpdate?: Partial<import('@/types/game').WorldState>;
+  characterUpdates?: ParsedCharacterUpdate[];
 }
 
 function parseStateTag(raw: string): Partial<import('@/types/game').WorldState> | undefined {
@@ -102,6 +120,34 @@ function parseStateTag(raw: string): Partial<import('@/types/game').WorldState> 
   }
 }
 
+function parseCharactersTag(raw: string): ParsedCharacterUpdate[] {
+  const charsRaw = extractTag(raw, 'CHARACTERS');
+  if (!charsRaw) return [];
+  try {
+    const parsed = JSON.parse(charsRaw) as Array<{
+      id?: string;
+      name?: string;
+      role?: string;
+      description?: string;
+      lastInteraction?: string;
+      isUpdate?: boolean;
+    }>;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(c => c.name && c.name.trim().length > 0)
+      .map(c => ({
+        id: (c.id ?? c.name ?? '').toLowerCase().replace(/[^a-zа-яё0-9]/gi, '_').slice(0, 40),
+        name: (c.name ?? '').trim(),
+        role: (c.role ?? '').trim(),
+        description: (c.description ?? '').trim(),
+        lastInteraction: (c.lastInteraction ?? '').trim(),
+        isUpdate: c.isUpdate === true,
+      }));
+  } catch {
+    return [];
+  }
+}
+
 function parseLLMResponse(raw: string, fallbackTurn: number): ParsedResponse {
   const narrative =
     extractTag(raw, 'NARRATIVE') ??
@@ -123,7 +169,7 @@ function parseLLMResponse(raw: string, fallbackTurn: number): ParsedResponse {
       const typeMatch = endingRaw.match(/"type"\s*:\s*"(good|neutral|bad)"/);
       if (typeMatch?.[1]) endingType = typeMatch[1] as 'good' | 'neutral' | 'bad';
     }
-    return { narrative, chatMessage, choices: [], isEnding: true, endingType, worldStateUpdate: parseStateTag(raw) };
+    return { narrative, chatMessage, choices: [], isEnding: true, endingType, worldStateUpdate: parseStateTag(raw), characterUpdates: parseCharactersTag(raw) };
   }
 
   const choicesRaw = extractTag(raw, 'CHOICES');
@@ -154,7 +200,7 @@ function parseLLMResponse(raw: string, fallbackTurn: number): ParsedResponse {
       { id: `c2_t${fallbackTurn}`, text: 'Осмотреться', isSelected: false },
     ];
   }
-  return { narrative, chatMessage, choices, isEnding: false, worldStateUpdate: parseStateTag(raw) };
+  return { narrative, chatMessage, choices, isEnding: false, worldStateUpdate: parseStateTag(raw), characterUpdates: parseCharactersTag(raw) };
 }
 
 function buildResponse(parsed: ParsedResponse, turnCount: number): NarrativeResponse {
@@ -168,6 +214,7 @@ function buildResponse(parsed: ParsedResponse, turnCount: number): NarrativeResp
       isEnding: true,
       endingType: type,
       worldStateUpdate: parsed.worldStateUpdate,
+      characterUpdates: parsed.characterUpdates,
     };
   }
   return {
@@ -177,6 +224,7 @@ function buildResponse(parsed: ParsedResponse, turnCount: number): NarrativeResp
     nextSceneId: `llm_turn_${turnCount}`,
     isEnding: false,
     worldStateUpdate: parsed.worldStateUpdate,
+    characterUpdates: parsed.characterUpdates,
   };
 }
 

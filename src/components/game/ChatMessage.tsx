@@ -14,6 +14,7 @@ interface ChatMessageProps {
   preset: NarratorPreset;
   useTypewriterEffect?: boolean;
   onTypingComplete?: () => void;
+  onSkipReady?: (skipFn: () => void) => void;
 }
 
 export function ChatMessage({
@@ -21,6 +22,7 @@ export function ChatMessage({
   preset,
   useTypewriterEffect = false,
   onTypingComplete,
+  onSkipReady,
 }: ChatMessageProps) {
   const typingSpeed = useSettingsStore((state) => state.typingSpeed);
   const gameFont = useSettingsStore((state) => state.gameFont);
@@ -36,12 +38,10 @@ export function ChatMessage({
     enabled: useTypewriterEffect && message.role === 'narrator' && !message.isTyping,
   });
 
-  // Skip typewriter on click
-  const handleClick = () => {
-    if (isTyping) {
-      skipToEnd();
-    }
-  };
+  // Pass skipToEnd up to parent so it can put it in a button
+  useEffect(() => {
+    if (onSkipReady) onSkipReady(skipToEnd);
+  }, [onSkipReady, skipToEnd]);
 
   // Auto-scroll to this message when it appears
   useEffect(() => {
@@ -105,8 +105,7 @@ export function ChatMessage({
       ref={messageRef}
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      onClick={handleClick}
-      className="flex gap-3 cursor-pointer"
+      className="flex gap-3"
     >
       {/* Avatar */}
       <Avatar className="w-10 h-10 shrink-0 ring-2 ring-white/10">

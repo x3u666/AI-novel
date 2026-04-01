@@ -52,6 +52,43 @@ import {
 import { Button } from '@/components/ui/button';
 
 
+import type { Character } from '@/types';
+
+// ── Helper: apply character updates with deduplication by id OR name ─────────
+function applyCharacterUpdates(
+  characterUpdates: Array<{ id: string; name: string; role: string; description: string; lastInteraction: string; isUpdate: boolean }>,
+  currentState: { characters: Character[]; worldState: { npcMemory: Record<string, { attitude: number; lastAction: string; name: string }> } },
+  addCharacter: (c: Character) => void,
+  updateCharacter: (id: string, updates: Partial<Character>) => void,
+) {
+  characterUpdates.forEach(cu => {
+    const attitude = currentState.worldState.npcMemory[cu.name]?.attitude ?? 0;
+    // Match by id first, then fall back to name match (catches id drift)
+    const existing =
+      currentState.characters.find(c => c.id === cu.id) ??
+      currentState.characters.find(c => c.name.toLowerCase() === cu.name.toLowerCase());
+
+    if (existing) {
+      // Always update if we found a match — regardless of isUpdate flag
+      updateCharacter(existing.id, {
+        name: cu.name || existing.name,
+        description: cu.description || existing.description,
+        traits: [cu.role, cu.lastInteraction].filter(Boolean),
+        relationships: { protagonist: attitude },
+      });
+    } else {
+      addCharacter({
+        id: cu.id,
+        name: cu.name,
+        description: cu.description,
+        traits: [cu.role, cu.lastInteraction].filter(Boolean),
+        relationships: { protagonist: attitude },
+        isUnlocked: true,
+      });
+    }
+  });
+}
+
 // Toolbar button component
 function ToolbarButton({
   icon: Icon,
@@ -122,6 +159,8 @@ export default function GamePage() {
     setEnding,
     updateChapter,
     updateWorldState,
+    addCharacter,
+    updateCharacter,
   } = useGameStore();
 
   // UI state
@@ -264,6 +303,11 @@ export default function GamePage() {
         updateWorldState(response.worldStateUpdate);
       }
 
+      // Add/update characters from model response
+      if (response.characterUpdates && response.characterUpdates.length > 0) {
+        applyCharacterUpdates(response.characterUpdates, useGameStore.getState(), addCharacter, updateCharacter);
+      }
+
       // Set available choices - preserve original IDs for scene navigation
       if (response.choices.length > 0) {
         setAvailableChoices(response.choices.map(c => ({
@@ -299,7 +343,7 @@ export default function GamePage() {
       setTyping(false);
       setLoading(false);
     }
-  }, [isTyping, isLoading, currentSceneId, addChatMessage, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, router]);
+  }, [isTyping, isLoading, currentSceneId, addChatMessage, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, addCharacter, updateCharacter, router]);
 
   // Handle choice selection
   const handleChoose = useCallback(async (choice: Choice) => {
@@ -346,6 +390,11 @@ export default function GamePage() {
         updateWorldState(response.worldStateUpdate);
       }
 
+      // Add/update characters from model response
+      if (response.characterUpdates && response.characterUpdates.length > 0) {
+        applyCharacterUpdates(response.characterUpdates, useGameStore.getState(), addCharacter, updateCharacter);
+      }
+
       // Set available choices
       if (response.choices.length > 0) {
         setAvailableChoices(response.choices.map(c => ({
@@ -380,7 +429,7 @@ export default function GamePage() {
       setTyping(false);
       setLoading(false);
     }
-  }, [isTyping, isLoading, currentSceneId, addChatMessage, makeChoice, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, router]);
+  }, [isTyping, isLoading, currentSceneId, addChatMessage, makeChoice, addNarrativeBlock, setAvailableChoices, clearChoices, setTyping, setLoading, setEnding, updateWorldState, addCharacter, updateCharacter, router]);
 
   // Handle typing complete (for auto-play)
   const handleTypingComplete = useCallback(() => {

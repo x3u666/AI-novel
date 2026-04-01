@@ -406,7 +406,7 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="max-w-[480px] mx-auto bg-black/30 backdrop-blur-md rounded-xl p-6 border border-white/10"
+              className="max-w-[560px] mx-auto bg-black/30 backdrop-blur-md rounded-xl p-6 border border-white/10"
             >
               {[
                 { icon: '⏱', label: 'Время прохождения', value: formatTimeMinSec(finalPlayTime), animate: false },
@@ -421,14 +421,14 @@ export function EndingScreen({ endingId, onNewGame, onMainMenu }: EndingScreenPr
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1, duration: 0.3 }}
-                  className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
+                  className="flex items-center justify-between py-3 border-b border-white/5 last:border-0 gap-4"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <span className="text-lg">{stat.icon}</span>
                     <span className="text-sm text-white/50">{stat.label}</span>
                   </div>
                   <span 
-                    className="text-sm font-semibold"
+                    className="text-sm font-semibold text-right"
                     style={stat.color ? { color: stat.color } : { color: '#E8E8ED' }}
                   >
                     {stat.animate ? <AnimatedCounter value={stat.value as number} /> : stat.value}

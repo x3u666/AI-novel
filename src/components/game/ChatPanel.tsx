@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback, useState } from 'react';
 import type { ChatMessage as ChatMessageType, Choice, NarratorPreset } from '@/types';
-import { ChatMessage } from './ChatMessage';
+import { ChatMessage as ChatMessageComponent } from './ChatMessage';
 import { TypingIndicator } from './TypingIndicator';
 import { ChoiceButtons } from './ChoiceButtons';
 import { UserInput } from './UserInput';
@@ -38,6 +38,15 @@ export function ChatPanel({
   const fontWeight = GAME_FONT_WEIGHTS[gameFont ?? 'inter'];
   const lineHeight = GAME_FONT_LINE_HEIGHTS[gameFont ?? 'inter'];
   const [isTypewriterActive, setIsTypewriterActive] = useState(false);
+  const skipFnRef = useRef<(() => void) | null>(null);
+
+  const handleSkipReady = useCallback((fn: () => void) => {
+    skipFnRef.current = fn;
+  }, []);
+
+  const handleSkipClick = useCallback(() => {
+    skipFnRef.current?.();
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     if (scrollContainerRef.current)
@@ -62,6 +71,7 @@ export function ChatPanel({
 
   const handleTypewriterComplete = useCallback(() => {
     setIsTypewriterActive(false);
+    skipFnRef.current = null;
     onTypingComplete?.();
   }, [onTypingComplete]);
 
@@ -88,11 +98,22 @@ export function ChatPanel({
                 const isLast = index === messages.length - 1;
                 const isLastNarrator = isLast && message.role === 'narrator';
                 return (
-                  <ChatMessage key={message.id} message={message} preset={preset}
+                  <ChatMessageComponent key={message.id} message={message} preset={preset}
                     useTypewriterEffect={useTypewriter && isLastNarrator}
-                    onTypingComplete={isLastNarrator ? handleTypewriterComplete : undefined} />
+                    onTypingComplete={isLastNarrator ? handleTypewriterComplete : undefined}
+                    onSkipReady={isLastNarrator ? handleSkipReady : undefined} />
                 );
               })}
+              {isTypewriterActive && (
+                <div className="flex justify-center">
+                  <button
+                    onClick={handleSkipClick}
+                    className="text-xs px-3 py-1 rounded-full border border-white/15 text-white/40 hover:text-white/70 hover:border-white/30 transition-all duration-150"
+                  >
+                    Пропустить
+                  </button>
+                </div>
+              )}
               <TypingIndicator preset={preset} isVisible={isTyping} />
               <div ref={messagesEndRef} className="h-1" />
             </>

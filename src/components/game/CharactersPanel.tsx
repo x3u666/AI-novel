@@ -44,21 +44,11 @@ export function CharactersPanel({ open, onClose }: CharactersPanelProps) {
 
   // Get relationship info for a character
   const getRelationshipInfo = (character: Character) => {
-    // Check relationships with protagonist (user)
-    const relationshipValue = character.relationships['protagonist'] || character.relationships['player'] || 0;
-    
-    if (relationshipValue >= 75) return RELATIONSHIP_TYPES.ally;
-    if (relationshipValue >= 50) return RELATIONSHIP_TYPES.friend;
-    if (relationshipValue >= 25) return RELATIONSHIP_TYPES.neutral;
-    if (relationshipValue > 0) return RELATIONSHIP_TYPES.enemy;
-    return RELATIONSHIP_TYPES.unknown;
-  };
-
-  // Get chapter where character was met
-  const getChapterMet = (character: Character) => {
-    // For now, estimate based on character traits or use a default
-    // In a real app, this would be tracked in the character data
-    return character.isUnlocked ? 1 : null;
+    const attitude = character.relationships['protagonist'] ?? 0;
+    if (attitude >= 30)  return RELATIONSHIP_TYPES.ally;
+    if (attitude >= 5)   return RELATIONSHIP_TYPES.friend;
+    if (attitude > -30)  return RELATIONSHIP_TYPES.neutral;
+    return RELATIONSHIP_TYPES.enemy;
   };
 
   // Close on escape key
@@ -144,7 +134,6 @@ export function CharactersPanel({ open, onClose }: CharactersPanelProps) {
                     <div className="space-y-3">
                       {unlockedCharacters.map((character, index) => {
                         const relationshipInfo = getRelationshipInfo(character);
-                        const chapterMet = getChapterMet(character);
                         const RelationshipIcon = relationshipInfo.icon;
 
                         return (
@@ -178,33 +167,25 @@ export function CharactersPanel({ open, onClose }: CharactersPanelProps) {
 
                               {/* Info */}
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-white truncate">{character.name}</h3>
-                                <p className="text-sm text-white/50 line-clamp-2 mt-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-semibold text-white">{character.name}</h3>
+                                  {character.traits[0] && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/50">
+                                      {character.traits[0]}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-white/50 mt-1 leading-snug">
                                   {character.description}
                                 </p>
-                                
-                                {/* Traits */}
-                                {character.traits.length > 0 && (
-                                  <div className="flex flex-wrap gap-1.5 mt-2">
-                                    {character.traits.slice(0, 3).map((trait, i) => (
-                                      <span
-                                        key={i}
-                                        className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-white/60"
-                                      >
-                                        {trait}
-                                      </span>
-                                    ))}
-                                  </div>
+                                {character.traits[1] && (
+                                  <p className="text-xs text-white/30 italic mt-1.5 leading-snug">
+                                    ↳ {character.traits[1]}
+                                  </p>
                                 )}
 
-                                {/* Meta info */}
+                                {/* Relationship */}
                                 <div className="flex items-center gap-4 mt-3 text-xs">
-                                  {chapterMet && (
-                                    <div className="flex items-center gap-1 text-white/40">
-                                      <span>Встречен:</span>
-                                      <span className="text-white/60">Глава {chapterMet}</span>
-                                    </div>
-                                  )}
                                   <div className={`flex items-center gap-1 ${relationshipInfo.color}`}>
                                     <RelationshipIcon className="w-3.5 h-3.5" />
                                     <span>{relationshipInfo.label}</span>
